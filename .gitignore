@@ -1,0 +1,41 @@
+# Build output
+**/build/
+**/bin/
+**/out/
+**/target/
+**/.gradle/
+*.class
+*.jar
+*.war
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+.env.*
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.sts4-cache/
+.apt_generated
+.springBeans
+nbproject/private/
+.nb-gradle/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Generated docs
+HELP.md
+
+.claude
