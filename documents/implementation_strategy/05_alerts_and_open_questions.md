@@ -10,7 +10,8 @@ Part of [[00_overview]].
 | True open set | First price of a Q2 | [[03_cycle_lifecycle]] (captured value) |
 | Sweep detected | Q2 trades beyond Q1 high/low | [[sweep]] |
 | Bias confirmed | Sweep followed by return | [[return_confirmation]] |
-| Diagonal divergence | Outlier among the 4 instruments at 13:45:00 UTC (always sent) | [[diagonal_opens]] |
+| Diagonal divergence | Outlier among the 4 instruments at 13:45:00 UTC (always sent) | [[diagonal_opens]] stage 1 |
+| Failure swing (BUY / SHORT) | 3-3-3 high/low broken in 3-3-4, then in 3-4-1 a 1s bar passes an extremity and closes on the matching side of the 3-3-3 mean (14:30:00-14:52:30 UTC) | [[diagonal_opens]] stage 2 |
 | SSMT detected | Instruments disagree on a sweep | [[04_ssmt]] |
 | High-confidence setup | Bias confirmed + SSMT + agrees with higher level | combined |
 

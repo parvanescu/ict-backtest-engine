@@ -2,6 +2,8 @@
 
 Part of [[00_rules_engine]]. Time grid in [[02_time_model]]; data in [[06_market_data_contract]].
 
+This rule has two stages: **stage 1** compares the opening prices A and B across the four instruments; **stage 2** watches the 3-3-3 interval for a failure swing (see "Stage 2" below).
+
 ## Idea in numbers
 
 A day is **64 blocks of 22.5 minutes**, counted from 22:00 UTC. Each block has a 3-digit address in base 4: (6h quarter, 90-min quarter, 22.5-min quarter), each digit 0-3 (0 = Q1, 1 = Q2, 2 = Q3, 3 = Q4).
@@ -83,7 +85,118 @@ Median of the other three for RTY is +0.50%; RTY's distance is 1.50 percentage p
 
 The alert is **always sent** at 13:45, including when the split is 2 vs 2 or a move is exactly zero. In those cases it reports "no single outlier" together with the four `r` values.
 
-## Effect of bar granularity
+## Stage 2: failure swing on the 3-3-3 range
+
+After the opening comparison, the rule looks inside the 3-3-3 interval itself. Addresses below are written 1-based (3-3-3 = 3rd 6h, 3rd 90m, 3rd 22.5m), which is the 0-based block address (2,2,2) used above.
+
+### Intervals involved (UTC)
+
+| Name | Meaning | 0-based address | Block | Start | End |
+|------|---------|-----------------|-------|-------|-----|
+| **3-3-3** | 3rd 22.5m of 3rd 90m of Q3 | 2,2,2 | 42 | 13:45:00 | 14:07:30 |
+| **3-3-4** | 4th 22.5m of 3rd 90m of Q3 | 2,2,3 | 43 | 14:07:30 | 14:30:00 |
+| **3-4-1** | 1st 22.5m of 4th 90m of Q3 | 2,3,0 | 44 | 14:30:00 | 14:52:30 |
+
+### Values
+
+For each instrument, from the bars of 3-3-3 [13:45:00, 14:07:30):
+
+| Value | Formula |
+|-------|---------|
+| `H` | highest `high` |
+| `L` | lowest `low` |
+| `M` (mean) | `(H + L) / 2`, the midpoint of the range |
+
+`M` splits the range into a lower half (prices below `M`) and an upper half (prices above `M`). In trading words the lower half is "discount" and the upper half is "premium"; in numbers it is just `price < M` or `price > M`.
+
+### Algorithm, per instrument (ES, NQ, YM, RTY)
+
+1. **Capture** `H`, `L`, `M` during 3-3-3. They are frozen at 14:07:30.
+2. **Wait through 3-3-4** [14:07:30, 14:30:00). Mark `highBroken` if any bar has `high > H`, and `lowBroken` if any bar has `low < L`.
+3. **Gate at 14:30:00** (start of 3-4-1):
+   - neither broken → **discard** the instrument for the day.
+   - otherwise → the instrument is a **candidate**; keep looking at it.
+4. **Watch every 1-second bar of 3-4-1** [14:30:00, 14:52:30) for each candidate. For each bar:
+   - **Break event**: the bar passes an extremity, i.e. `bar.high > H` or `bar.low < L`. This is reported as "extremity passed".
+   - **Failure swing check** on that same bar, using its `close` as the current price:
+     - low passed (`bar.low < L`) **and** `close < M` → **BUY** signal (price is in the lower half after breaking the low).
+     - high passed (`bar.high > H`) **and** `close > M` → **SHORT** signal (price is in the upper half after breaking the high).
+     - otherwise (the bar passed an extremity but closed on the other side of `M`) → no signal from this bar.
+5. **Signal time**: when the qualifying bar is received, i.e. its start + 1 s with `S1` bars. If no bar qualifies by 14:52:30, nothing is emitted for that instrument.
+
+```mermaid
+flowchart TD
+    A["13:45:00-14:07:30 (3-3-3)<br/>capture H, L, M=(H+L)/2"] --> B["14:07:30-14:30:00 (3-3-4)<br/>watch for high > H or low < L"]
+    B --> C{"14:30:00<br/>H or L broken?"}
+    C -- "neither" --> D["Discard instrument"]
+    C -- "yes" --> E["14:30:00-14:52:30 (3-4-1)<br/>check every 1s bar"]
+    E --> F{"bar passes H or L?"}
+    F -- no --> E
+    F -- yes --> G{"which side, and where is close vs M?"}
+    G -- "low passed, close < M" --> H["Signal: BUY"]
+    G -- "high passed, close > M" --> I["Signal: SHORT"]
+    G -- "close on other side of M" --> E
+```
+
+### Timeline of stage 2
+
+| Time (UTC) | Number captured | Action |
+|------------|-----------------|--------|
+| 13:45:00-14:07:30 | running `H`, `L` per instrument | Update extremes with each bar |
+| 14:07:30 | `H`, `L`, `M` frozen | Store the three numbers |
+| 14:07:30-14:30:00 | any price above `H` or below `L` | Set `highBroken` / `lowBroken` |
+| 14:30:00 | none | Discard instruments with no break |
+| 14:30:00-14:52:30 | each 1s bar of each candidate | Test `high > H` / `low < L`, then compare `close` with `M` |
+| first qualifying bar | the bar's `close`, `H`, `L`, `M` | Emit BUY or SHORT |
+
+### Worked example (made-up prices)
+
+| Instrument | H | L | M | 3-3-4 high / low | Candidate? |
+|------------|---|---|---|------------------|------------|
+| ES | 6032.00 | 6026.00 | 6029.00 | 6031.50 / 6027.00 | no, discarded |
+| NQ | 21120.00 | 21090.00 | 21105.00 | 21118.00 / 21092.00 | no, discarded |
+| YM | 44240.00 | 44180.00 | 44210.00 | 44235.00 / 44170.00 | yes (low broken) |
+| RTY | 2185.00 | 2178.00 | 2181.50 | 2187.50 / 2179.00 | yes (high broken) |
+
+In 3-4-1:
+- **YM**: the 1s bar at 14:33:12 has `low` 44168.00 (< L 44180) and `close` 44172.00 (< M 44210) → **BUY**, signalled at 14:33:13.
+- **RTY**: the 1s bar at 14:31:05 has `high` 2186.00 (> H 2185) and `close` 2185.50 (> M 2181.50) → **SHORT**, signalled at 14:31:06.
+- If RTY's bar had closed at 2181.00 (below M) the extremity would still be reported as passed, but there would be no SHORT.
+
+### Output
+
+| Field | Value |
+|-------|-------|
+| `rule` | Diagonal opens, failure swing |
+| `scope` | One instrument |
+| `verdict` | `BULLISH` (BUY) or `BEARISH` (SHORT) |
+| `time` | When the qualifying bar was received |
+| `evidence` | `H`, `L`, `M`, which side was broken in 3-3-4, the 3-4-1 bar that passed the extremity (time, high, low, close) |
+
+An "extremity passed" event is also reported for bars that pass `H` or `L` but do not qualify for a signal.
+
+### Effect of bar granularity (stage 2)
+
+- The 3-4-1 watch is designed for **`S1`** bars. With `M1` bars the same test runs on minute-sized bars, so a signal is later and coarser, and a minute bar's `close` may sit far from where the extremity was passed.
+- The decision time 14:30:00 is a 90-min boundary, so it is exact under every rounding policy. The edges inside the 90-min quarter move with `M1` ([[06_market_data_contract]]):
+
+| Policy | 3-3-3 | 3-3-4 |
+|--------|-------|-------|
+| True (`S1`) | 13:45:00-14:07:30 | 14:07:30-14:30:00 |
+| `FLOOR` (22) | 13:44-14:06 | 14:06-14:30 |
+| `CEIL` (23) | 13:46-14:09 | 14:09-14:30 |
+| `ALTERNATE` (22,23,22,23) | 13:45-14:07 | 14:07-14:30 |
+
+### Interpretations to confirm
+
+- `M` is the midpoint `(H + L) / 2`. Alternative: the average of the closes (or of all prices) in 3-3-3.
+- "Current price" for the mean test is the `close` of the 1s bar that passed the extremity. Alternative: the extreme price itself (which is always on the extreme side of `M`, making the test trivial).
+- In 3-4-1 either extremity counts. Alternative: only the side that was broken in 3-3-4.
+- One signal per instrument (the first qualifying bar), or a signal on every qualifying bar?
+- If an instrument is a candidate on both sides (both `H` and `L` broken in 3-3-4): both sides are watched in 3-4-1 as written; confirm.
+- Relation to stage 1 (opening comparison and outlier): stage 2 currently runs for **every** instrument independently. Whether it should only run on the outlier from stage 1 is undecided.
+
+## Effect of bar granularity (stage 1)
 
 The block start times depend on the 22.5-min rounding policy when only `M1` bars exist ([[06_market_data_contract]]):
 

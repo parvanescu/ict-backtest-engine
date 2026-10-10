@@ -26,7 +26,7 @@ flowchart LR
 |------|------|---------------------|-------|-------|
 | Sweep | [[sweep]] | Did a quarter take out the previous quarter's high or low? | per instrument, any level | when the extreme is taken |
 | Return confirmation | [[return_confirmation]] | After a sweep, did price come back? | per instrument, any level | when price returns |
-| Diagonal opens | [[diagonal_opens]] | Is one instrument moving differently from the others between two fixed points of the day? | across the 4 instruments | 13:45:00 UTC daily |
+| Diagonal opens | [[diagonal_opens]] | Stage 1: is one instrument moving differently from the others between two fixed points of the day? Stage 2: after breaking the 3-3-3 range, does price end on the matching side of its mean (BUY / SHORT)? | stage 1 across the 4 instruments, stage 2 per instrument | stage 1 at 13:45:00 UTC daily, stage 2 between 14:30:00 and 14:52:30 UTC |
 
 Rules can be added later as new files in this folder without changing the framework.
 
