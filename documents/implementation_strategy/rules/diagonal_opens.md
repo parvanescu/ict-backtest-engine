@@ -18,17 +18,10 @@ The "diagonal" blocks have the same digit three times. The step between consecut
 Check: 22:00 + 21 x 22.5 min = 05:52:30; 22:00 + 42 x 22.5 min = 13:45:00.
 
 ```mermaid
-gantt
-    title Diagonal points inside one trading day (UTC)
-    dateFormat HH:mm
-    axisFormat %H:%M
-    section Daily quarters
-    Q1 Asia    :a1, 22:00, 6h
-    Q2 London  :a2, after a1, 6h
-    Q3 NY AM   :a3, after a2, 6h
-    section Points
-    Opening A 05:52:30 :milestone, m1, 05:52, 0m
-    Opening B 13:45:00 :milestone, m2, 13:45, 0m
+flowchart LR
+    S["22:00:00<br/>day start<br/>block 0"] -- "7h 52m 30s" --> A["05:52:30<br/>Opening A<br/>block 21"]
+    A -- "7h 52m 30s" --> B["13:45:00<br/>Opening B<br/>block 42"]
+    B -- "7h 52m 30s" --> N["21:37:30<br/>NY PM point (later)<br/>block 63"]
 ```
 
 ## Definition
