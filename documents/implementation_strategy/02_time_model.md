@@ -90,7 +90,6 @@ A day contains 64 blocks of 22.5 min. Each block is addressed by three base-4 di
 | 0,0,0 | 0 | 22:00:00 |
 | 2,2,2 | 42 | 13:45:00 |
 | 2,2,3 | 43 | 14:07:30 |
-| 2,3,0 | 44 | 14:30:00 |
 
 Used by [[sequence_range_sweep]].
 

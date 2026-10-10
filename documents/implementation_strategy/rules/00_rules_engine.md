@@ -26,7 +26,7 @@ flowchart LR
 |------|------|---------------------|-------|-------|
 | Sweep | [[sweep]] | Did a quarter take out the previous quarter's high or low? | per instrument, any level | when the extreme is taken |
 | Return confirmation | [[return_confirmation]] | After a sweep, did price come back? | per instrument, any level | when price returns |
-| Sequence range sweep | [[sequence_range_sweep]] | When one instrument sweeps its 22.5-min range in the next quarter, are all the others on the matching side of their range means (BUY / SHORT for the others)? | across the 4 instruments, signal per non-breaking instrument | setup during 3-3-4, signal at 14:30:00 UTC |
+| Sequence range sweep | [[sequence_range_sweep]] | When one instrument sweeps its 22.5-min range in the next quarter, which of the others are on the matching side of their own range means (BUY / SHORT for those)? | across the 4 instruments, signal per non-breaking instrument | during 3-3-4 (14:07:30-14:30:00 UTC), as soon as the check passes |
 
 Rules can be added later as new files in this folder without changing the framework.
 

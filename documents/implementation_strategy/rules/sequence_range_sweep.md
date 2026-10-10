@@ -7,9 +7,9 @@ Part of [[00_rules_engine]]. Time grid in [[02_time_model]]; data in [[06_market
 This rule was first called "diagonal opens". It no longer compares opening prices between intervals, so the name was dropped. Public material that describes similar ideas:
 - ICT **Turtle Soup**: price sweeps a range high/low (liquidity), then the breakout fails and price reverses. Sweep of highs gives SHORT, sweep of lows gives LONG.
 - ICT **premium / discount**: a range is split at its 50% level; the upper half is premium, the lower half is discount.
-- Daye's Quarterly Theory indicators on TradingView (for example "Quarter Sequence Chains") show chains of consecutive quarters across nested levels, which is the 3-3-3 → 3-3-4 → 3-4-1 sequence used here.
+- Daye's Quarterly Theory indicators on TradingView (for example "Quarter Sequence Chains") show chains of consecutive quarters across nested levels, which is the 3-3-3 → 3-3-4 sequence used here.
 
-The rule combines those: the range of one 22.5-minute quarter, a sweep of that range by one instrument in the next quarter, and a premium/discount test of the other instruments against their own range means. The comparison across ES, NQ, YM and RTY is similar in spirit to SMT divergence ([[04_ssmt]]). Working name: **Sequence Range Sweep**. It is separate from [[sweep]], which sweeps the Q1 range of a cycle during Q2.
+The rule combines those: the range of one 22.5-minute quarter (3-3-3), a sweep of that range by one instrument in the next quarter (3-3-4), and a premium/discount test of each other instrument against its own range mean. The comparison across ES, NQ, YM and RTY is similar in spirit to SMT divergence ([[04_ssmt]]). It is separate from [[sweep]], which sweeps the Q1 range of a cycle during Q2.
 
 Sources: [ICT Turtle Soup](https://www.mql5.com/it/market/product/184692), [ICT premium/discount](https://www.luxalgo.com/library/indicator/lgjVkiDL-ict-premium-discount/), [Daye Quarter Sequence Chains](https://kr.tradingview.com/scripts/daye/).
 
@@ -21,7 +21,6 @@ A day is **64 blocks of 22.5 minutes**, counted from 22:00 UTC. A block has a 3-
 |------|---------|-----------------|-------|-------------|-----------|
 | **3-3-3** | 3rd 22.5m of 3rd 90m of Q3 | 2,2,2 | 42 | 13:45:00 | 14:07:30 |
 | **3-3-4** | 4th 22.5m of 3rd 90m of Q3 | 2,2,3 | 43 | 14:07:30 | 14:30:00 |
-| **3-4-1** | 1st 22.5m of 4th 90m of Q3 | 2,3,0 | 44 | 14:30:00 | 14:52:30 |
 
 Check: 22:00 + 42 x 22.5 min = 13:45:00; 22:00 + 43 x 22.5 min = 14:07:30; 22:00 + 44 x 22.5 min = 14:30:00.
 
@@ -39,35 +38,35 @@ For each instrument (ES, NQ, YM, RTY), from the bars of 3-3-3 [13:45:00, 14:07:3
 
 ## Algorithm (four instruments together)
 
-The four instruments are compared with each other. Notation: `X` is the instrument that breaks an extremity, `Y` is any of the other three. Each instrument has its own `H`, `L`, `M` from its own 3-3-3.
+The four instruments are compared with each other. Notation: `X` is the instrument that breaks an extremity (the trigger), `Y` is any of the other three (a candidate target). Each instrument has its own `H`, `L`, `M` from its own 3-3-3.
 
 1. **Capture** `H`, `L`, `M` for every instrument during 3-3-3. They are frozen at 14:07:30.
 2. **Watch every 1-second bar of 3-3-4** [14:07:30, 14:30:00). For each second `s`:
    - **Trigger**: an instrument `X` has a bar at `s` that breaks its own extremity: `X.high > X.H` (high break) or `X.low < X.L` (low break).
-   - **Look at the others at the same second `s`**: for every other instrument `Y` compare the `close` of its 1s bar at `s` with its own mean `Y.M`.
-   - **Low break** (`X.low < X.L`): if **every** `Y` has `Y.close < Y.M` → **BUY setup** for the instruments that did **not** break. If **at least one** `Y` has `Y.close > Y.M` → no setup (the instruments disagree, "we should not buy").
-   - **High break** (`X.high > X.H`): if **every** `Y` has `Y.close > Y.M` → **SHORT setup** for the instruments that did not break. If **at least one** `Y` has `Y.close < Y.M` → no setup.
-3. **Gate at 14:30:00**: an instrument with no setup is **discarded** for the day. An instrument with a setup is kept.
-4. **Signal at the first trade of 3-4-1**: let `P1` = open of the first bar that starts at or after 14:30:00. For each kept instrument emit **BUY** or **SHORT** with `P1` as the entry reference, together with its `H`, `L`, `M` and the setup record (who triggered, at which second, and the closes and means used).
-5. **Signal time**: when `P1` is received, about 14:30:01 UTC with `S1` bars and about 14:31:00 with `M1` bars (a received bar is final, see [[06_market_data_contract]]). Nothing happens after the signal until the next day.
+   - **Check each other instrument `Y` separately**, using its 1s bar at the same second `s`. The check uses the same side as the break, not the close.
+     - **Low break**: `Y` qualifies if its `low` is in the lower half of its own range: `Y.L <= Y.low < Y.M`. → **BUY signal for `Y`**.
+     - **High break**: `Y` qualifies if its `high` is in the upper half of its own range: `Y.M < Y.high <= Y.H`. → **SHORT signal for `Y`**.
+   - An instrument that does not qualify (for example its low is still above its mean) simply gets no signal. The other instruments are **not** held back by it: the three others do not all need to agree.
+   - An instrument that has itself broken its range at second `s` is not a target (it is a trigger, not a candidate).
+3. **Signal**: each qualifying instrument gets its own signal **in 3-3-4, at the moment the break and its mean check are complete**, i.e. when the 1s bars of second `s` of `X` and `Y` have been received. With `S1` bars that is about `s + 1 s`. There is no waiting for 3-4-1.
 
-In words: one instrument breaking its range, while the other three are all on the same half of their ranges (below their means for a low break, above their means for a high break), makes those other three the instruments to act on.
+In words: when one instrument breaks its range, look at each of the other instruments at that second. The ones whose price has already reached the matching half of their own range (below the mean for a low break, above the mean for a high break, while still inside the range) get the signal. The others are ignored.
 
 ```mermaid
 flowchart TD
     A["13:45:00-14:07:30 (3-3-3)<br/>per instrument: H, L, M=(H+L)/2"] --> B["14:07:30-14:30:00 (3-3-4)<br/>each second s: does any instrument X break its H or L?"]
     B -- no --> B
-    B -- "X breaks low" --> C{"same second s:<br/>all other Y have close < M ?"}
-    B -- "X breaks high" --> D{"same second s:<br/>all other Y have close > M ?"}
-    C -- yes --> E["BUY setup for instruments<br/>that did not break"]
-    C -- "at least one Y above M" --> F["No setup"]
-    D -- yes --> G["SHORT setup for instruments<br/>that did not break"]
-    D -- "at least one Y below M" --> F
-    E --> H{"14:30:00<br/>setup exists?"}
-    G --> H
-    F --> B
-    H -- no --> I["Discard instrument"]
-    H -- yes --> J["3-4-1: first trade P1 -> signal"]
+    B -- "X breaks low" --> C["for each other Y at second s"]
+    B -- "X breaks high" --> D["for each other Y at second s"]
+    C --> E{"Y.L <= Y.low < Y.M ?"}
+    D --> F{"Y.M < Y.high <= Y.H ?"}
+    E -- yes --> G["Signal BUY for Y"]
+    E -- no --> H["No signal for Y"]
+    F -- yes --> I["Signal SHORT for Y"]
+    F -- no --> H
+    G --> B
+    H --> B
+    I --> B
 ```
 
 ## Timeline
@@ -77,9 +76,8 @@ flowchart TD
 | 22:00 to 13:45:00 | none | Listen and aggregate bars |
 | 13:45:00-14:07:30 | running `H`, `L` for each of the 4 instruments | Update extremes with each bar |
 | 14:07:30 | `H`, `L`, `M` for each instrument frozen | Store 12 numbers |
-| 14:07:30-14:30:00 | each 1s bar of each instrument | Detect a break; at that second compare the other instruments' `close` with their `M`; record setups |
-| 14:30:00 | none | Discard instruments without a setup |
-| 14:30:00 (first bar) | `P1` | Emit BUY / SHORT for each instrument with a setup |
+| 14:07:30-14:30:00 | each 1s bar of each instrument | Detect a break by `X`; at that second test each other `Y` against its own `M`; **send a signal for each `Y` that qualifies** |
+| 14:30:00 | none | Watch ends for the day |
 
 ## Worked example (made-up prices)
 
@@ -92,36 +90,34 @@ Values from 3-3-3:
 | YM | 44240.00 | 44180.00 | 44210.00 |
 | RTY | 2185.00 | 2178.00 | 2181.50 |
 
-At 14:12:40 YM's bar has `low` 44168.00 < L 44180.00: **trigger, low break** by YM. Closes of the others in the same second:
+At 14:12:40 YM's bar has `low` 44168.00 < L 44180.00: **trigger, low break** by YM. The others' bars in the same second:
 
-| Instrument | close at 14:12:40 | M | close < M ? |
-|------------|-------------------|---|-------------|
-| ES | 6027.50 | 6029.00 | yes |
-| NQ | 21098.00 | 21105.00 | yes |
-| RTY | 2179.80 | 2181.50 | yes |
+| Instrument | low at 14:12:40 | L | M | L <= low < M ? | Result |
+|------------|-----------------|---|---|----------------|--------|
+| ES | 6027.00 | 6026.00 | 6029.00 | yes | **BUY ES** |
+| NQ | 21108.00 | 21090.00 | 21105.00 | no (above M) | no signal |
+| RTY | 2179.20 | 2178.00 | 2181.50 | yes | **BUY RTY** |
 
-All three are below their means → **BUY setup for ES, NQ, RTY** (the instruments that did not break). YM gets no setup.
+Signals: **BUY ES** and **BUY RTY** at about 14:12:41 with `S1` bars. NQ is not on the matching side of its mean, so it is skipped without blocking the others. YM, the trigger, gets no signal.
 
-At 14:30:00 the first bars of 3-4-1 give `P1`: ES 6028.25, NQ 21100.50, RTY 2180.20. Signals: **BUY ES** (6028.25), **BUY NQ** (21100.50), **BUY RTY** (2180.20), each with its `H`, `L`, `M` and the trigger record (YM, 14:12:40).
-
-Variant: if NQ had closed at 21110.00 (above its `M`) at 14:12:40, one instrument disagrees, so there is no setup from that trigger and nothing would be signalled.
+High break is the mirror: if YM's `high` exceeds 44240.00, each other instrument whose `high` at that second satisfies `M < high <= H` (for ES between 6029.00 and 6032.00, for NQ between 21105.00 and 21120.00, for RTY between 2181.50 and 2185.00) gets a **SHORT** signal.
 
 ## Output
 
 | Field | Value |
 |-------|-------|
 | `rule` | Sequence range sweep |
-| `scope` | One instrument (a target that did not break), derived from the group |
+| `scope` | One instrument (a target `Y` that qualified) |
 | `verdict` | `BULLISH` (BUY) after a low break, `BEARISH` (SHORT) after a high break |
-| `time` | When `P1` was received |
-| `evidence` | Trigger instrument and bar (time, high or low), the closes and means of the other instruments at that second, the target's `H`, `L`, `M`, `P1` |
+| `time` | The second `s` of the trigger, and the time the signal was produced |
+| `evidence` | Trigger instrument and bar (time, high or low), the target's `low` (or `high`), `H`, `L`, `M` |
 
-An "extremity passed" event is also reported for every break, including ones that do not create a setup.
+An "extremity passed" event is also reported for every break, including ones that produce no signal.
 
 ## Effect of bar granularity
 
-- The watch in 3-3-4 is designed for **`S1`** bars. With `M1` bars the same test runs on minute bars, so setups are coarser and a minute bar's `close` can sit far from where the extremity was passed.
-- The decision time 14:30:00 is a 90-min boundary, so it is exact under every rounding policy. The edges inside the 90-min quarter move with `M1` ([[06_market_data_contract]]):
+- The watch in 3-3-4 is designed for **`S1`** bars. With `M1` bars the same test runs on minute bars, so the check is coarser and the signal later.
+- The interval edges move with `M1` ([[06_market_data_contract]]):
 
 | Policy | 3-3-3 | 3-3-4 |
 |--------|-------|-------|
@@ -132,16 +128,15 @@ An "extremity passed" event is also reported for every break, including ones tha
 
 ## Possible extension: other intervals
 
-The same sequence (range of one quarter, sweep in the next, signal at the start of the one after) might also be used at **lower intervals**, from the 90-min level down to roughly the 5-min level. This is only a note; it is not designed or decided.
+The same sequence (range of one quarter, then a sweep check in the next one) might also be used at **lower intervals**, from the 90-min level down to roughly the 5-min level. This is only a note; it is not designed or decided.
 
-The sequence sits at fixed fractions of its parent window: 3-3-3 starts at 42/64, 3-3-4 at 43/64, 3-4-1 at 44/64 and ends at 45/64. Inside a 6-hour session (quarters of 90m, 22.5m and about 5m37.5s):
+The sequence sits at fixed fractions of its parent window: 3-3-3 starts at 42/64, 3-3-4 at 43/64 and ends at 44/64. Inside a 6-hour session (quarters of 90m, 22.5m and about 5m37.5s):
 
 | Point | Offset from session start | London example (UTC) |
 |-------|---------------------------|----------------------|
 | 3-3-3 start | 3 h 56 m 15 s | 07:56:15 |
 | 3-3-4 start | 4 h 01 m 52.5 s | 08:01:52.5 |
-| 3-4-1 start | 4 h 07 m 30 s | 08:07:30 |
-| 3-4-1 end | 4 h 13 m 07.5 s | 08:13:07.5 |
+| 3-3-4 end | 4 h 07 m 30 s | 08:07:30 |
 
 Things to settle if this is pursued:
 - The lowest level is 5 m 37.5 s, not 5 minutes, so exact boundaries need half-second resolution. With `S1` or `M1` bars they are approximate.
@@ -151,12 +146,12 @@ Things to settle if this is pursued:
 ## Interpretations to confirm
 
 - `M` is the midpoint `(H + L) / 2` of each instrument's own 3-3-3 (the word "median" was used in discussion; this note uses the midpoint). Alternative: the statistical median or the average of the closes.
-- The trigger is only the break of an extremity by `X`. The earlier test of `X`'s own close against its own mean is no longer used. Confirm.
-- "Signal in the same direction" is read through the discount/premium mapping: low break with the others below their means gives BUY, high break with the others above their means gives SHORT. The opposite mapping (low break gives SELL) is not used.
-- "At least one" other instrument on the opposite side of its mean cancels the trigger. Equivalent to: all three others must be on the matching side.
-- The signal is issued for the instruments that **did not break** at that second.
-- "Same second": the 1s bar with the same start time as `X`'s breaking bar. If an instrument has no bar in that second (no trades), its latest known close is used (alternative: no setup).
-- The signal is emitted at the first trade of 3-4-1 (14:30:00). Alternative: emit as soon as the setup is created inside 3-3-4.
-- Once a setup exists, later bars in 3-3-4 do not cancel it. Alternative: cancel or update it if the situation reverses.
-- Several triggers: if instruments break in both directions, or break at different seconds, which setup wins? Undecided. Currently the first setup per target is recorded.
-- Is an instrument that broke at an earlier second still a target for a later trigger? Undecided.
+- Each other instrument is judged **on its own**; the others do not all need to qualify (earlier versions required all three).
+- "In that range" is read as: the target's `low` (low break) is in the lower half of its own 3-3-3 range, `L <= low < M`, or its `high` (high break) is in the upper half, `M < high <= H`. Alternative: only the mean test (`low < M` / `high > M`) without the requirement to stay inside the range. Under that alternative an instrument that has already broken its own range would also qualify.
+- The mean check uses the **low** (low break) or **high** (high break) of the target's bar, not the close. Because a bar's low is never above its close, this passes more easily than a close-based test.
+- The trigger is only the break of an extremity by `X`. `X`'s own price is not compared with its own mean, and `X` gets no signal for this trigger.
+- The signal direction follows the discount/premium mapping: low break gives BUY, high break gives SHORT.
+- "Same second": the 1s bar with the same start time as `X`'s breaking bar. If an instrument has no bar in that second (no trades), its latest known bar is used (alternative: it does not qualify).
+- The signal carries no entry price; it states the second and the evidence. Should it include a price reference?
+- Repeated signals: a target can qualify again at a later trigger. Currently assumed: **one signal per target instrument per day** (the first time it qualifies). Alternative: allow repeats.
+- Instruments breaking in both directions at different seconds: each trigger is evaluated on its own.
