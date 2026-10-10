@@ -26,7 +26,7 @@ flowchart LR
 |------|------|---------------------|-------|-------|
 | Sweep | [[sweep]] | Did a quarter take out the previous quarter's high or low? | per instrument, any level | when the extreme is taken |
 | Return confirmation | [[return_confirmation]] | After a sweep, did price come back? | per instrument, any level | when price returns |
-| Sequence range sweep | [[sequence_range_sweep]] | After a 22.5-min range is swept in the next 22.5-min quarter, is price on the matching side of the range mean (BUY / SHORT)? | per instrument | setup during 3-3-4, signal at 14:30:00 UTC |
+| Sequence range sweep | [[sequence_range_sweep]] | When one instrument sweeps its 22.5-min range in the next quarter, are all the others on the matching side of their range means (BUY / SHORT for the others)? | across the 4 instruments, signal per non-breaking instrument | setup during 3-3-4, signal at 14:30:00 UTC |
 
 Rules can be added later as new files in this folder without changing the framework.
 
@@ -57,7 +57,7 @@ Common result shape (conceptual):
 
 Yes, with two conditions.
 
-1. **Independence.** Rules that are views of the same event add little. Return confirmation is a continuation of sweep (it cannot exist without it), so a sweep plus a return is one story, not two. The sequence range sweep uses a different range (one 22.5-min quarter instead of Q1) and a different test (the range mean), so it is a more independent check, although it is also a sweep of a range.
+1. **Independence.** Rules that are views of the same event add little. Return confirmation is a continuation of sweep (it cannot exist without it), so a sweep plus a return is one story, not two. The sequence range sweep uses a different range (one 22.5-min quarter instead of Q1) and a different test (the range mean), and it compares instruments with each other, so it is a more independent check, although it is also a sweep of a range.
 2. **Comparable verdicts.** All three rules say bullish or bearish for one instrument, so results can be compared directly. How results are scored and combined is undecided.
 
 ```mermaid

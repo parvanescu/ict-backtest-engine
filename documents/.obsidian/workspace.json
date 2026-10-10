@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "implementation_strategy/05_alerts_and_open_questions.md",
+                "file": "implementation_strategy/rules/return_confirmation.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "05_alerts_and_open_questions"
+              "title": "return_confirmation"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "implementation_strategy/05_alerts_and_open_questions.md",
+                "file": "implementation_strategy/rules/return_confirmation.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "implementation_strategy/05_alerts_and_open_questions.md",
+                "file": "implementation_strategy/rules/return_confirmation.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "implementation_strategy/05_alerts_and_open_questions.md",
+                "file": "implementation_strategy/rules/return_confirmation.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -190,13 +190,13 @@
   },
   "active": "ac3e39e5c0704af4",
   "lastOpenFiles": [
-    "implementation_strategy/rules/diagonal_opens.md",
     "implementation_strategy/rules/sequence_range_sweep.md",
-    "implementation_strategy/05_alerts_and_open_questions.md",
-    "implementation_strategy/rules/sedGZtTuF",
-    "implementation_strategy/rules/return_confirmation.md",
     "implementation_strategy/rules/sweep.md",
     "implementation_strategy/rules/00_rules_engine.md",
+    "implementation_strategy/05_alerts_and_open_questions.md",
+    "implementation_strategy/rules/diagonal_opens.md",
+    "implementation_strategy/rules/sedGZtTuF",
+    "implementation_strategy/rules/return_confirmation.md",
     "implementation_strategy/rules",
     "strategy_philosophy.md",
     "implementation_strategy/01_instruments_and_data.md",
