@@ -19,7 +19,7 @@ The framework only captures numbers. Rules decide what they mean.
 | `q1High`, `q1Low`, `q1Open` | During and at end of Q1 of a cycle | [[sweep]], [[return_confirmation]] |
 | `trueOpen` (first price of Q2) | Start of Q2 | [[return_confirmation]] |
 | Bars of Q2, as they arrive | During Q2 | [[sweep]], [[return_confirmation]] |
-| Open at a given block of the day | At block start | [[diagonal_opens]] |
+| High, low and mean (`H`, `L`, `M`) of a given 22.5-min block | During the block | [[sequence_range_sweep]] |
 
 ```mermaid
 flowchart LR

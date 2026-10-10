@@ -10,7 +10,7 @@ The **framework** is the quarterly theory: a fixed UTC time grid (6h, 90-min, 22
 |------|------|
 | Sweep | [[sweep]] |
 | Return confirmation | [[return_confirmation]] |
-| Diagonal opens | [[diagonal_opens]] |
+| Sequence range sweep | [[sequence_range_sweep]] |
 
 How rules are combined: [[00_rules_engine]].
 
@@ -42,7 +42,7 @@ flowchart LR
     A[MD adapter<br/>ES NQ YM RTY<br/>via ZeroMQ] --> B[Aggregator<br/>S1 / M1 bars]
     B --> C[Time model<br/>session, 90m, 22.5m]
     C --> D[Cycle framework<br/>captured values per window]
-    D --> E[Rules engine<br/>sweep, return, diagonal opens]
+    D --> E[Rules engine<br/>sweep, return, sequence range sweep]
     E --> F[Alert engine]
     F --> G[Notification channel]
 ```

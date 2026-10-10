@@ -10,8 +10,7 @@ Part of [[00_overview]].
 | True open set | First price of a Q2 | [[03_cycle_lifecycle]] (captured value) |
 | Sweep detected | Q2 trades beyond Q1 high/low | [[sweep]] |
 | Bias confirmed | Sweep followed by return | [[return_confirmation]] |
-| Diagonal divergence | Outlier among the 4 instruments at 13:45:00 UTC (always sent) | [[diagonal_opens]] stage 1 |
-| Failure swing (BUY / SHORT) | 3-3-3 high/low broken in 3-3-4, then in 3-4-1 a 1s bar passes an extremity and closes on the matching side of the 3-3-3 mean (14:30:00-14:52:30 UTC) | [[diagonal_opens]] stage 2 |
+| Sequence range sweep (BUY / SHORT) | 3-3-3 high/low broken by a 1s bar in 3-3-4 with its close on the matching side of the 3-3-3 mean; signal at the first trade of 3-4-1 (14:30:00 UTC) | [[sequence_range_sweep]] |
 | SSMT detected | Instruments disagree on a sweep | [[04_ssmt]] |
 | High-confidence setup | Bias confirmed + SSMT + agrees with higher level | combined |
 
@@ -41,7 +40,7 @@ Deferred:
 Each criterion now has its own file in the `rules` folder with its own open questions. Framework and combination questions are in [[00_rules_engine]].
 - [[sweep]]: wick vs close, minimum distance, both sides swept.
 - [[return_confirmation]]: back across true open or inside Q1 range, validity window.
-- [[diagonal_opens]]: outlier threshold and deviation measure (**deferred for now**); possible extension to lower intervals (90-min down to ~5-min), only noted.
+- [[sequence_range_sweep]]: mean definition, signal timing, cancelling a setup; possible extension to lower intervals (90-min down to ~5-min), only noted.
 - [[00_rules_engine]]: how results are combined, level priority.
 
 ### Time
@@ -60,7 +59,7 @@ flowchart LR
     A[Settle open questions] --> B[Define Java service requirements]
     B --> C[Time model + tests]
     C --> D[Cycle framework]
-    D --> E[Rules: sweep, return, diagonal opens]
+    D --> E[Rules: sweep, return, sequence range sweep]
     E --> F[Combination and alert delivery]
 ```
 

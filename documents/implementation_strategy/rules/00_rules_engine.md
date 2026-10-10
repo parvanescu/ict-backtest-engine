@@ -12,7 +12,7 @@ flowchart LR
     G --> C[Captured values<br/>ranges, opens, extremes]
     C --> R1[Rule: Sweep]
     C --> R2[Rule: Return confirmation]
-    C --> R3[Rule: Diagonal opens]
+    C --> R3[Rule: Sequence range sweep]
     R1 --> RES[Rule results]
     R2 --> RES
     R3 --> RES
@@ -26,7 +26,7 @@ flowchart LR
 |------|------|---------------------|-------|-------|
 | Sweep | [[sweep]] | Did a quarter take out the previous quarter's high or low? | per instrument, any level | when the extreme is taken |
 | Return confirmation | [[return_confirmation]] | After a sweep, did price come back? | per instrument, any level | when price returns |
-| Diagonal opens | [[diagonal_opens]] | Stage 1: is one instrument moving differently from the others between two fixed points of the day? Stage 2: after breaking the 3-3-3 range, does price end on the matching side of its mean (BUY / SHORT)? | stage 1 across the 4 instruments, stage 2 per instrument | stage 1 at 13:45:00 UTC daily, stage 2 between 14:30:00 and 14:52:30 UTC |
+| Sequence range sweep | [[sequence_range_sweep]] | After a 22.5-min range is swept in the next 22.5-min quarter, is price on the matching side of the range mean (BUY / SHORT)? | per instrument | setup during 3-3-4, signal at 14:30:00 UTC |
 
 Rules can be added later as new files in this folder without changing the framework.
 
@@ -57,14 +57,14 @@ Common result shape (conceptual):
 
 Yes, with two conditions.
 
-1. **Independence.** Rules that are views of the same event add little. Return confirmation is a continuation of sweep (it cannot exist without it), so a sweep plus a return is one story, not two. The diagonal rule uses different inputs (two fixed opens across four instruments) and is the more independent check.
-2. **Comparable verdicts.** Sweep and return say bullish or bearish for one instrument. The diagonal rule says which instrument diverges, not a direction. To combine them the engine needs a mapping from each result to a common form, for example "supports bullish / supports bearish / flags an instrument". How results are scored and combined is undecided.
+1. **Independence.** Rules that are views of the same event add little. Return confirmation is a continuation of sweep (it cannot exist without it), so a sweep plus a return is one story, not two. The sequence range sweep uses a different range (one 22.5-min quarter instead of Q1) and a different test (the range mean), so it is a more independent check, although it is also a sweep of a range.
+2. **Comparable verdicts.** All three rules say bullish or bearish for one instrument, so results can be compared directly. How results are scored and combined is undecided.
 
 ```mermaid
 flowchart TD
     S[Sweep result] --> CF{Confluence}
     R[Return result] --> CF
-    D[Diagonal result] --> CF
+    D[Sequence range sweep result] --> CF
     CF -- "rules agree" --> H[Stronger alert]
     CF -- "one rule only" --> L[Weaker alert]
     CF -- "rules conflict" --> N[No decision / report conflict]

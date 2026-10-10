@@ -2,7 +2,7 @@
 
 Part of [[00_overview]]. Concept explained in [[strategy_philosophy]]; instruments in [[01_instruments_and_data]].
 
-> SSMT is a cross-instrument comparison built on the sweep rule ([[sweep]]). It is a candidate to become its own rule in [[00_rules_engine]]; the daily [[diagonal_opens]] rule is another cross-instrument comparison with a different definition of divergence.
+> SSMT is a cross-instrument comparison built on the sweep rule ([[sweep]]). It is a candidate to become its own rule in [[00_rules_engine]].
 
 ## Definition used in this project
 
