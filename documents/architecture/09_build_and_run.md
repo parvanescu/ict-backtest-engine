@@ -18,7 +18,7 @@ Part of [[00_architecture_overview]]. The Gradle project is `project/system`; co
 | `./gradlew test` | Unit tests plus the end-to-end test (STOMP client + ZeroMQ publisher on random local ports) |
 | `./gradlew bootRun` | Runs the service on `127.0.0.1:8080` |
 | `./gradlew bootJar` | Builds `build/libs/alert-service-0.0.1-SNAPSHOT.jar`; run it with `java -jar` |
-| `./gradlew demoAdapter` | Plays a synthetic trading day on `tcp://127.0.0.1:5556` once the service subscribes to ES, NQ, YM and RTY (`--args="--speed 60"`: simulated seconds per real second, default 60). For trying the UI ([[11_ui]]) |
+| `./gradlew demoAdapter` | The market data simulator: binds `tcp://127.0.0.1:5556` and serves its page on `http://127.0.0.1:5557` to play scenarios ([[11_ui]], Simulator). Options (`--args="..."`): `--endpoint`, `--control-host` (default `127.0.0.1`), `--control-port` (5557), `--scenario <id>` to play one as soon as the service is subscribed (no page needed), `--speed` (simulated seconds per real second for `--scenario`, default 60) |
 
 ## Configuration
 
@@ -40,6 +40,7 @@ Every property can be set as an environment variable (Spring relaxed binding: `a
 | `ws://127.0.0.1:8080/ws` | STOMP. Subscribe to `/topic/signals/{ruleKey}` and `/topic/bars/{symbol}` ([[07_signals_and_ui]], [[10_live_bars]]) |
 | `GET /api/signals/{ruleKey}` | Day status and today's signals of a running rule (URL-encode the key) |
 | `GET /api/bars/{symbol}?from=` | Today's stored 1-second bars |
+| `POST /api/reset` | Clears the stored bars, the signal history and the state of running rules ([[07_signals_and_ui]]) |
 
 ## Docker (Docker Desktop)
 
@@ -58,7 +59,7 @@ Then open `http://localhost:5173`.
 |-----------|--------------------|-----------|------|
 | `alert-service` | `project/system/Dockerfile`, default target | `127.0.0.1:8080` | The service. Listens on all interfaces inside the container (`SERVER_ADDRESS=0.0.0.0`); published on the host's loopback only, since nothing is authenticated |
 | `ui` | `project/ui/Dockerfile` (Node build, served by nginx) | `127.0.0.1:5173` | The React UI. The browser runs on the host, so it is built to call the service at `127.0.0.1:8080` |
-| `demo-adapter` | `project/system/Dockerfile`, target `demo` | - | Synthetic market data on `tcp://demo-adapter:5556`, inside the compose network only |
+| `demo-adapter` | `project/system/Dockerfile`, target `demo` | `127.0.0.1:5557` | The simulator: market data on `tcp://demo-adapter:5556` (inside the compose network only) and its page on port 5557, published on the host's loopback only, since nothing is authenticated |
 
 The service reads market data from `ALERT_ZMQ_ENDPOINTS`, `tcp://demo-adapter:5556` by default. With a real adapter running on the host instead (PowerShell):
 
@@ -66,7 +67,7 @@ The service reads market data from `ALERT_ZMQ_ENDPOINTS`, `tcp://demo-adapter:55
 $env:ALERT_ZMQ_ENDPOINTS="tcp://host.docker.internal:5556"; docker compose up --build alert-service ui
 ```
 
-Playing the demo day again: `docker compose restart alert-service demo-adapter`. The service keeps the day's bars and rule state, so restarting only the adapter is not enough; the UI reconnects by itself.
+Playing another scenario: press Reset data in the UI, then Play in the simulator page. The service keeps the day's bars and rule state until reset, and a scenario replays the same day, so without a reset the old bars would stay on screen.
 
 ## Adapter side, for reference
 
