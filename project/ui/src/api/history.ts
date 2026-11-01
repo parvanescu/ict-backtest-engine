@@ -20,3 +20,15 @@ export async function fetchSignals(ruleKey: string, signal?: AbortSignal): Promi
   }
   return response.json();
 }
+
+/** Clears the service's stored bars, signals and rule state. JSON content type: the service refuses anything else. */
+export async function resetData(): Promise<void> {
+  const response = await fetch(`${HTTP_BASE}/api/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  if (!response.ok) {
+    throw new Error(`POST /api/reset: HTTP ${response.status}`);
+  }
+}
