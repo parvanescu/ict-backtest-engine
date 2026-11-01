@@ -1,5 +1,5 @@
 <!-- bmad:context -->
-<!-- Verified 2026-11-01 against 7ba2cba. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-01 against a683d0c. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## alert-service
 
@@ -28,6 +28,6 @@ Java service (ZeroMQ market data in, STOMP/WebSocket signals out) plus a React U
 - `documents/` is the spec. When a note and the code disagree, ask the user which is right — never pick one. When a change alters behavior, update the matching note in the same PR.
 - The theory is an external methodology, not our design: never treat business-logic questions about it as open decisions or redesign it.
 - Rules use bar timestamps (UTC) only, never the wall clock; the grid is anchored at 18:00 New York.
-- Core classes (`ProviderManager`, `RuleRegistry`, rules, `TimeGrid`) carry no Spring annotations; keep them framework-free so unit tests build them directly.
+- Core classes (`ProviderManager`, `RuleRegistry`, rules, `TimeGrid`) carry no Spring annotations; keep them framework-free so unit tests build them directly. Only the `*Factory` classes are `@Component`.
 
 <!-- /bmad:context -->
