@@ -1,0 +1,34 @@
+# The whole system in Docker Desktop: docker compose up --build   then open http://localhost:5173
+#
+# With a real market data adapter on the host instead of the demo one (PowerShell):
+#   $env:ALERT_ZMQ_ENDPOINTS="tcp://host.docker.internal:5556"; docker compose up --build alert-service ui
+name: alert-service
+
+services:
+  alert-service:
+    build: ./system
+    image: alert-service
+    ports:
+      # Loopback only: the service has no authentication.
+      - "127.0.0.1:8080:8080"
+    environment:
+      # Comma-separated adapter PUB endpoints.
+      ALERT_ZMQ_ENDPOINTS: ${ALERT_ZMQ_ENDPOINTS:-tcp://demo-adapter:5556}
+    extra_hosts:
+      # Makes host.docker.internal resolve on Linux too (Docker Desktop provides it already).
+      - "host.docker.internal:host-gateway"
+
+  ui:
+    build: ./ui
+    image: alert-service-ui
+    ports:
+      - "127.0.0.1:5173:80"
+    depends_on:
+      - alert-service
+
+  demo-adapter:
+    build:
+      context: ./system
+      target: demo
+    image: alert-service-demo
+    command: ["--endpoint", "tcp://*:5556", "--speed", "60"]

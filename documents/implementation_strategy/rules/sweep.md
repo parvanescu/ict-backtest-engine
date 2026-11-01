@@ -21,7 +21,7 @@ Inside a cycle, Q1 forms a range. In Q2 price moves beyond Q1's high or low, whi
 - Applies at every level of the grid: the cycle can be a session (quarters of 90 min) or a 90-min quarter (quarters of 22.5 min).
 - The daily level is context only: Q1 Asia has no previous session in the same day to sweep.
 
-Example (London session, UTC): Q1 = 04:00-05:30, Q2 = 05:30-07:00. `q1High` and `q1Low` come from 04:00-05:30. Any bar after 05:30 that goes beyond them is a sweep.
+Example (London session, New York time): Q1 = 00:00-01:30, Q2 = 01:30-03:00. `q1High` and `q1Low` come from 00:00-01:30. Any bar after 01:30 that goes beyond them is a sweep.
 
 ## State (sweep part)
 
@@ -48,6 +48,6 @@ stateDiagram-v2
 
 ## Open questions
 
-- How strict is a sweep: a wick (high/low) beyond the level, or a bar **close** beyond it? With `M1` data a close can only be judged at bar end ([[06_market_data_contract]]).
+- How strict is a sweep: a wick (high/low) beyond the level, or a bar **close** beyond it? With 1-second bars a close is judged at the end of each second ([[06_market_data_contract]]).
 - Minimum distance beyond the level (any tick, or a threshold)?
 - Both Q1 high and Q1 low swept in the same Q2: currently treated as ambiguous (`NEUTRAL`).
