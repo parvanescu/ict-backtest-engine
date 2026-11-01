@@ -26,8 +26,8 @@ import com.alert_service.timegrid.TimeGrid;
  * 2026-10-12 from 09:44 New York, just before the 3-3-3 range opens, to the 17:00 close. Prices are random walks,
  * kept inside each 3-3-3 range during 3-3-4 except at the scripted {@link #EVENTS}, which trigger the rule:
  * <ul>
- * <li>10:12:40: YM sweeps its low; ES and RTY are in the lower half of their ranges: BULLISH ES and RTY.</li>
- * <li>10:20:15: NQ sweeps its high; YM is in the upper half of its range: BEARISH YM.</li>
+ * <li>10:12:40: YM sweeps its low; ES and RTY are in the lower half of their ranges: range sweep events for ES and RTY.</li>
+ * <li>10:20:15: NQ sweeps its high; YM is in the upper half of its range: a range sweep event for YM.</li>
  * </ul>
  * Bars carry the simulated times, so the pace changes nothing in the results. After the close it stays idle. The
  * service keeps the day's bars and rule state, so playing the day again needs a restart of the service and of this
@@ -74,12 +74,12 @@ public final class DemoAdapter {
 			new Event(LocalTime.of(10, 12, 40),
 					Map.of("YM", Shape.SWEEP_LOW, "ES", Shape.LOWER_HALF, "RTY", Shape.LOWER_HALF, "NQ",
 							Shape.UPPER_HALF),
-					"YM sweeps its 3-3-3 low; ES and RTY are in their lower half: expect BULLISH ES and RTY"),
+					"YM sweeps its 3-3-3 low; ES and RTY are in their lower half: expect range sweep events for ES and RTY"),
 			new Event(LocalTime.of(10, 20, 15),
 					Map.of("NQ", Shape.SWEEP_HIGH, "YM", Shape.UPPER_HALF, "ES", Shape.LOWER_HALF, "RTY",
 							Shape.LOWER_HALF),
-					"NQ sweeps its 3-3-3 high; YM is in its upper half: expect BEARISH YM"
-							+ " (ES and RTY already have today's result)"));
+					"NQ sweeps its 3-3-3 high; YM is in its upper half: expect a range sweep event for YM"
+							+ " (ES and RTY already have today's event)"));
 
 	/** Walk state and 3-3-3 range of one instrument, in ticks. */
 	private static final class Walk {

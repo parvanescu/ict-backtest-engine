@@ -13,7 +13,6 @@ import com.alert_service.rule.AggregateRuleDescriptor;
 import com.alert_service.rule.DayStatus;
 import com.alert_service.rule.RuleKey;
 import com.alert_service.rule.RuleResult;
-import com.alert_service.rule.Verdict;
 import com.alert_service.rule.aggregate.sequencerangesweep.SequenceRangeSweepState.PendingCheck;
 import com.alert_service.rule.aggregate.sequencerangesweep.SequenceRangeSweepState.Side;
 import com.alert_service.rule.basic.rangebreak.RangeBreakEvent;
@@ -25,8 +24,8 @@ import com.alert_service.rule.basic.rangebreak.RangeBreakWatch;
 
 /**
  * When one instrument X breaks its 3-3-3 high or low during 3-3-4, every other instrument Y whose bar at the same
- * second is in the matching half of its own range gets a result: BUY (bullish) after a low break when
- * {@code L <= low < M}, SHORT (bearish) after a high break when {@code M < high <= H}. One result per target per day.
+ * second is in the matching half of its own range gets an event report: after a low break when
+ * {@code L <= low < M}, after a high break when {@code M < high <= H}. One event per target per day.
  * <p>
  * Same-second resolution uses event time only. Bars of different symbols arrive in any order, so a check of Y at
  * second s is decided by Y's own stream: its bar at s if it has one, otherwise its latest bar before s once a later
@@ -41,6 +40,7 @@ public final class SequenceRangeSweep extends AggregateRule<RangeBreakEvent, Seq
 	public static final AggregateRuleDescriptor DESCRIPTOR = new AggregateRuleDescriptor("SEQUENCE_RANGE_SWEEP",
 			RangeBreakWatch.DESCRIPTOR.type(), RangeBreakEvent.class, 2);
 
+	public static final String RANGE_SWEEP_EVENT = "RANGE_SWEEP_EVENT";
 	public static final String EXTREMITY_PASSED = "EXTREMITY_PASSED";
 	public static final String INVALID_WINDOW = "INVALID_WINDOW";
 
@@ -206,8 +206,7 @@ public final class SequenceRangeSweep extends AggregateRule<RangeBreakEvent, Seq
 		target.put("H", range.high());
 		target.put("L", range.low());
 		target.put("M", range.mean());
-		emit(RuleResult.verdict(key(), RangeBreakWatch.LEVEL, check.target(),
-				check.side() == Side.LOW ? Verdict.BULLISH : Verdict.BEARISH, check.second(),
+		emit(RuleResult.report(key(), RANGE_SWEEP_EVENT, RangeBreakWatch.LEVEL, List.of(check.target()), check.second(),
 				Map.of("trigger", trigger, "target", target)));
 	}
 }

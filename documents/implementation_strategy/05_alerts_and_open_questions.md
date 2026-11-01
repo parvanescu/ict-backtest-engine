@@ -10,7 +10,7 @@ Part of [[00_overview]].
 | True open set | First price of a Q2 | [[03_cycle_lifecycle]] (captured value) |
 | Sweep detected | Q2 trades beyond Q1 high/low | [[sweep]] |
 | Bias confirmed | Sweep followed by return | [[return_confirmation]] |
-| Sequence range sweep (BUY / SHORT) | one instrument breaks its 3-3-3 high/low in 3-3-4 each other instrument whose low is in the lower half (low break) or high in the upper half (high break) of its own 3-3-3 range in the same second gets its own signal, sent right then during 3-3-4 (10:07:30-10:30:00 NY) | [[sequence_range_sweep]] |
+| Sequence range sweep | one instrument breaks its 3-3-3 high/low in 3-3-4 each other instrument whose low is in the lower half (low break) or high in the upper half (high break) of its own 3-3-3 range in the same second gets its own event report, sent right then during 3-3-4 (10:07:30-10:30:00 NY) | [[sequence_range_sweep]] |
 | SSMT detected | Instruments disagree on a sweep | [[04_ssmt]] |
 | High-confidence setup | Bias confirmed + SSMT + agrees with higher level | combined |
 

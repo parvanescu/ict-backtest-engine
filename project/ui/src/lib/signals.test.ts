@@ -3,7 +3,7 @@ import type { Signal } from '../api/types';
 import {
   canonicalRuleKey,
   dayStatusAfter,
-  latestResultFor,
+  latestEventFor,
   markersFor,
   mergeSignals,
   rangeLevelsFor,
@@ -21,12 +21,12 @@ const report: Signal = {
   eventTime: '2026-10-12T14:12:40Z',
   evidence: { side: 'LOW', price: 44168, level: 44180 },
 };
-const bullishEs: Signal = {
+const eventEs: Signal = {
   id: 2,
   ruleKey: KEY,
-  kind: 'RESULT',
+  kind: 'REPORT',
+  code: 'RANGE_SWEEP_EVENT',
   scope: ['ES'],
-  verdict: 'BULLISH',
   eventTime: '2026-10-12T14:12:40Z',
   evidence: { target: { H: 6032, L: 6026, M: 6029, low: 6027 } },
 };
@@ -41,33 +41,34 @@ describe('mergeSignals', () => {
   it('orders by id, drops duplicates and errors', () => {
     const error: Signal = { ruleKey: KEY, kind: 'ERROR', message: 'boom' };
 
-    expect(mergeSignals([bullishEs, error], [report, bullishEs]).map((s) => s.id)).toEqual([1, 2]);
+    expect(mergeSignals([eventEs, error], [report, eventEs]).map((s) => s.id)).toEqual([1, 2]);
   });
 });
 
 describe('markersFor', () => {
-  it('marks the results about the charted symbol only, not reports', () => {
-    expect(markersFor([report, bullishEs], 'ES')).toEqual([
-      expect.objectContaining({ time: 1_791_814_360, shape: 'arrowUp', position: 'belowBar', text: 'BULLISH' }),
+  it('marks the events about the charted symbol only, not other reports', () => {
+    expect(markersFor([report, eventEs], 'ES')).toEqual([
+      expect.objectContaining({ time: 1_791_814_360, shape: 'circle', text: 'Sweep event' }),
     ]);
-    expect(markersFor([report, bullishEs], 'YM')).toEqual([]);
+    expect(markersFor([report, eventEs], 'YM')).toEqual([]);
   });
 
-  it('marks bearish results above the lines', () => {
-    const bearish: Signal = { ...bullishEs, id: 3, verdict: 'BEARISH' };
+  it('uses the same neutral marker whichever side was broken', () => {
+    const high: Signal = { ...eventEs, id: 3, evidence: { trigger: { side: 'HIGH' } } };
 
-    expect(markersFor([bearish], 'ES')).toEqual([
-      expect.objectContaining({ shape: 'arrowDown', position: 'aboveBar', text: 'BEARISH' }),
+    expect(markersFor([eventEs, high], 'ES').map((m) => [m.shape, m.color, m.text])).toEqual([
+      ['circle', expect.any(String), 'Sweep event'],
+      ['circle', expect.any(String), 'Sweep event'],
     ]);
   });
 });
 
-describe('latestResultFor', () => {
-  it('finds the newest result about the symbol', () => {
-    const later: Signal = { ...bullishEs, id: 9, verdict: 'BEARISH' };
+describe('latestEventFor', () => {
+  it('finds the newest event about the symbol', () => {
+    const later: Signal = { ...eventEs, id: 9 };
 
-    expect(latestResultFor([bullishEs, report, later], 'ES')).toBe(later);
-    expect(latestResultFor([bullishEs, report], 'YM')).toBeNull();
+    expect(latestEventFor([eventEs, report, later], 'ES')).toBe(later);
+    expect(latestEventFor([eventEs, report], 'YM')).toBeNull();
   });
 });
 
@@ -75,22 +76,23 @@ describe('reportsFor', () => {
   it('lists the reports about the symbol, newest first, up to the limit', () => {
     const reports = [1, 2, 3].map((id): Signal => ({ ...report, id }));
 
-    expect(reportsFor([...reports, bullishEs], 'YM', 2).map((s) => s.id)).toEqual([3, 2]);
+    expect(reportsFor([...reports, eventEs], 'YM', 2).map((s) => s.id)).toEqual([3, 2]);
     expect(reportsFor(reports, 'ES', 10)).toEqual([]);
+    expect(reportsFor([report, eventEs], 'ES', 10)).toEqual([eventEs]);
   });
 });
 
 describe('rangeLevelsFor', () => {
-  it('reads the 3-3-3 range from the latest result about the symbol', () => {
-    expect(rangeLevelsFor([report, bullishEs], 'ES')).toEqual({ high: 6032, low: 6026, mean: 6029 });
-    expect(rangeLevelsFor([report, bullishEs], 'YM')).toBeNull();
+  it('reads the 3-3-3 range from the latest event about the symbol', () => {
+    expect(rangeLevelsFor([report, eventEs], 'ES')).toEqual({ high: 6032, low: 6026, mean: 6029 });
+    expect(rangeLevelsFor([report, eventEs], 'YM')).toBeNull();
   });
 });
 
 describe('dayStatusAfter', () => {
-  it('follows statuses and results', () => {
+  it('follows statuses and events', () => {
     expect(dayStatusAfter('UNKNOWN', report)).toBe('UNKNOWN');
-    expect(dayStatusAfter('UNKNOWN', bullishEs)).toBe('VALID');
+    expect(dayStatusAfter('UNKNOWN', eventEs)).toBe('VALID');
     expect(dayStatusAfter('UNKNOWN', { ruleKey: KEY, kind: 'STATUS', code: 'INVALID_WINDOW' })).toBe(
       'INVALID_WINDOW',
     );

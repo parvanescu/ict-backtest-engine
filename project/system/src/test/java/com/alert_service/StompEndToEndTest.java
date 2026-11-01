@@ -122,8 +122,9 @@ class StompEndToEndTest {
 		assertThat(live.getFirst()).containsEntry("kind", "REPORT")
 			.containsEntry("code", "EXTREMITY_PASSED")
 			.containsEntry("scope", List.of("YM"));
-		assertThat(live.subList(1, 3)).allSatisfy(s -> assertThat(s).containsEntry("kind", "RESULT")
-			.containsEntry("verdict", "BULLISH")
+		assertThat(live.subList(1, 3)).allSatisfy(s -> assertThat(s).containsEntry("kind", "REPORT")
+			.containsEntry("code", "RANGE_SWEEP_EVENT")
+			.doesNotContainKey("verdict")
 			.containsEntry("eventTime", "2026-10-12T14:12:40Z"));
 		assertThat(live.subList(1, 3)).extracting(s -> String.valueOf(((List<?>) s.get("scope")).getFirst()))
 			.containsExactlyInAnyOrder("ES", "RTY");

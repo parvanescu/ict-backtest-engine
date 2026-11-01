@@ -11,8 +11,6 @@ export const COLORS = {
   high: '#26a69a',
   low: '#ef5350',
   close: '#f5c542',
-  bullish: '#26a69a',
-  bearish: '#ef5350',
   range: '#787b86',
 } as const;
 

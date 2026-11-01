@@ -19,7 +19,7 @@ Part of [[00_architecture_overview]]. Business open questions stay in [[05_alert
 | Question | Note |
 |----------|------|
 | Bound on the aggregate queue, and what to do when full (unbounded now; volume is about one bar per second per symbol) | [[03_sources_and_subscriptions]] |
-| "One result per target per day" keeps the first check decided, which is not always the earliest second when a symbol's stream lags; fixing it needs waiting for every stream to pass the second | [[06_sequence_range_sweep_design]] |
+| "One event per target per day" keeps the first check decided, which is not always the earliest second when a symbol's stream lags; fixing it needs waiting for every stream to pass the second | [[06_sequence_range_sweep_design]] |
 | An aggregate attached after 10:30 NY receives nothing that day, so its day status stays `UNKNOWN` instead of `INVALID_WINDOW` until the next day | [[06_sequence_range_sweep_design]] |
 
 ## Later

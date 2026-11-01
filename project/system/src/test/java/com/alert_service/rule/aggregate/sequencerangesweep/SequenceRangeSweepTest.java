@@ -16,7 +16,6 @@ import com.alert_service.rule.DayStatus;
 import com.alert_service.rule.RuleKey;
 import com.alert_service.rule.RuleResult;
 import com.alert_service.rule.RuleResult.Kind;
-import com.alert_service.rule.Verdict;
 import com.alert_service.rule.basic.rangebreak.RangeBreakEvent.BarPositioned;
 import com.alert_service.rule.basic.rangebreak.RangeBreakEvent.RangeCaptured;
 import com.alert_service.rule.basic.rangebreak.RangeBreakEvent.RangeUnavailable;
@@ -87,16 +86,22 @@ class SequenceRangeSweepTest {
 		bar("YM", instant, "44235.00", "44245.00", true, false);
 	}
 
-	private List<RuleResult> verdicts() {
-		return results.stream().filter(r -> r.kind() == Kind.RESULT).toList();
+	private List<RuleResult> events() {
+		return results.stream()
+			.filter(r -> r.kind() == Kind.REPORT && SequenceRangeSweep.RANGE_SWEEP_EVENT.equals(r.code()))
+			.toList();
 	}
 
-	private List<String> buySymbols() {
-		return verdicts().stream()
-			.filter(r -> r.verdict() == Verdict.BULLISH)
+	private List<String> lowBreakSymbols() {
+		return events().stream()
+			.filter(r -> sideOf(r).equals("LOW"))
 			.map(r -> r.scope().getFirst())
 			.sorted()
 			.toList();
+	}
+
+	private static String sideOf(RuleResult event) {
+		return (String) ((java.util.Map<?, ?>) event.evidence().get("trigger")).get("side");
 	}
 
 	@Test
@@ -107,12 +112,12 @@ class SequenceRangeSweepTest {
 		bar("RTY", S, "2179.20", "2179.50");
 		ymBreaksLow(S);
 
-		assertThat(buySymbols()).containsExactly("ES", "RTY");
-		RuleResult es = verdicts().stream().filter(r -> r.scope().equals(List.of("ES"))).findFirst().orElseThrow();
+		assertThat(lowBreakSymbols()).containsExactly("ES", "RTY");
+		RuleResult es = events().stream().filter(r -> r.scope().equals(List.of("ES"))).findFirst().orElseThrow();
 		assertThat(es.eventTime()).isEqualTo(t(S));
 		assertThat(es.ruleKey()).isEqualTo("SEQUENCE_RANGE_SWEEP[ES,NQ,RTY,YM]");
 		assertThat(es.evidence()).containsKeys("trigger", "target");
-		assertThat(results).filteredOn(r -> r.kind() == Kind.REPORT)
+		assertThat(results).filteredOn(r -> SequenceRangeSweep.EXTREMITY_PASSED.equals(r.code()))
 			.singleElement()
 			.satisfies(report -> {
 				assertThat(report.code()).isEqualTo(SequenceRangeSweep.EXTREMITY_PASSED);
@@ -124,14 +129,14 @@ class SequenceRangeSweepTest {
 	void workedExampleTriggerFirst() {
 		allRanges();
 		ymBreaksLow(S);
-		assertThat(verdicts()).isEmpty();
+		assertThat(events()).isEmpty();
 
 		bar("ES", S, "6027.00", "6028.00");
-		assertThat(buySymbols()).containsExactly("ES");
+		assertThat(lowBreakSymbols()).containsExactly("ES");
 		bar("NQ", S, "21108.00", "21110.00");
 		bar("RTY", S, "2179.20", "2179.50");
 
-		assertThat(buySymbols()).containsExactly("ES", "RTY");
+		assertThat(lowBreakSymbols()).containsExactly("ES", "RTY");
 	}
 
 	@Test
@@ -139,11 +144,11 @@ class SequenceRangeSweepTest {
 		allRanges();
 		bar("ES", plus(S, -1), "6027.00", "6028.00");
 		ymBreaksLow(S);
-		assertThat(verdicts()).isEmpty();
+		assertThat(events()).isEmpty();
 
 		bar("ES", plus(S, 1), "6031.00", "6031.50");
 
-		assertThat(buySymbols()).containsExactly("ES");
+		assertThat(lowBreakSymbols()).containsExactly("ES");
 	}
 
 	@Test
@@ -153,7 +158,7 @@ class SequenceRangeSweepTest {
 		ymBreaksLow(S);
 		rule.onEvent(new WindowClosed("RTY", DAY, t("2026-10-12T14:30:00Z")));
 
-		assertThat(buySymbols()).containsExactly("RTY");
+		assertThat(lowBreakSymbols()).containsExactly("RTY");
 	}
 
 	@Test
@@ -162,19 +167,19 @@ class SequenceRangeSweepTest {
 		ymBreaksLow(S);
 		bar("NQ", plus(S, 5), "21095.00", "21100.00");
 
-		assertThat(verdicts()).isEmpty();
+		assertThat(events()).isEmpty();
 	}
 
 	@Test
-	void highBreakGivesShortToTargetsInUpperHalf() {
+	void highBreakReportsTargetsInUpperHalf() {
 		allRanges();
 		ymBreaksHigh(S);
 		bar("ES", S, "6029.50", "6030.00");
 		bar("NQ", S, "21100.00", "21104.00");
 		bar("RTY", S, "2183.00", "2185.00");
 
-		assertThat(verdicts()).extracting(r -> r.scope().getFirst()).containsExactlyInAnyOrder("ES", "RTY");
-		assertThat(verdicts()).allSatisfy(r -> assertThat(r.verdict()).isEqualTo(Verdict.BEARISH));
+		assertThat(events()).extracting(r -> r.scope().getFirst()).containsExactlyInAnyOrder("ES", "RTY");
+		assertThat(events()).allSatisfy(r -> assertThat(sideOf(r)).isEqualTo("HIGH"));
 	}
 
 	@Test
@@ -185,7 +190,7 @@ class SequenceRangeSweepTest {
 		bar("RTY", S, "2177.00", "2179.00", false, true);
 		bar("NQ", S, "21108.00", "21110.00");
 
-		assertThat(verdicts()).isEmpty();
+		assertThat(events()).isEmpty();
 		assertThat(results).filteredOn(r -> r.kind() == Kind.REPORT).hasSize(3);
 	}
 
@@ -197,7 +202,7 @@ class SequenceRangeSweepTest {
 		bar("ES", plus(S, 10), "6027.50", "6028.00");
 		ymBreaksLow(plus(S, 10));
 
-		assertThat(buySymbols()).containsExactly("ES");
+		assertThat(lowBreakSymbols()).containsExactly("ES");
 	}
 
 	@Test
@@ -207,15 +212,15 @@ class SequenceRangeSweepTest {
 		range("YM");
 		bar("ES", S, "6027.00", "6028.00");
 		ymBreaksLow(S);
-		assertThat(verdicts()).isEmpty();
+		assertThat(events()).isEmpty();
 		assertThat(rule.dayStatus()).isEqualTo(DayStatus.UNKNOWN);
 
 		range("RTY");
 		assertThat(rule.dayStatus()).isEqualTo(DayStatus.VALID);
-		assertThat(buySymbols()).containsExactly("ES");
+		assertThat(lowBreakSymbols()).containsExactly("ES");
 
 		bar("RTY", S, "2179.20", "2179.50");
-		assertThat(buySymbols()).containsExactly("ES", "RTY");
+		assertThat(lowBreakSymbols()).containsExactly("ES", "RTY");
 	}
 
 	@Test
@@ -227,7 +232,7 @@ class SequenceRangeSweepTest {
 		ymBreaksLow(S);
 
 		assertThat(rule.dayStatus()).isEqualTo(DayStatus.INVALID_WINDOW);
-		assertThat(verdicts()).isEmpty();
+		assertThat(events()).isEmpty();
 		assertThat(results).filteredOn(r -> r.kind() == Kind.STATUS)
 			.singleElement()
 			.satisfies(status -> {
@@ -246,7 +251,7 @@ class SequenceRangeSweepTest {
 		assertThat(rule.dayStatus()).isEqualTo(DayStatus.INVALID_WINDOW);
 		bar("ES", S, "6027.00", "6028.00");
 		ymBreaksLow(S);
-		assertThat(verdicts()).isEmpty();
+		assertThat(events()).isEmpty();
 	}
 
 	@Test
