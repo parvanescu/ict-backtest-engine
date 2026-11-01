@@ -191,7 +191,79 @@ class SequenceRangeSweepTest {
 		bar("NQ", S, "21108.00", "21110.00");
 
 		assertThat(events()).isEmpty();
-		assertThat(results).filteredOn(r -> r.kind() == Kind.REPORT).hasSize(3);
+		assertThat(results).filteredOn(r -> SequenceRangeSweep.EXTREMITY_PASSED.equals(r.code())).hasSize(3);
+	}
+
+	private List<RuleResult> noEvents() {
+		return results.stream()
+			.filter(r -> r.kind() == Kind.REPORT && SequenceRangeSweep.RANGE_SWEEP_NO_EVENT.equals(r.code()))
+			.toList();
+	}
+
+	@Test
+	void checkedTargetThatDoesNotQualifyIsReportedWithItsRange() {
+		allRanges();
+		bar("ES", S, "6027.00", "6028.00");
+		bar("NQ", S, "21108.00", "21110.00");
+		bar("RTY", S, "2179.20", "2179.50");
+		ymBreaksLow(S);
+
+		assertThat(lowBreakSymbols()).containsExactly("ES", "RTY");
+		assertThat(noEvents()).singleElement().satisfies(report -> {
+			assertThat(report.scope()).containsExactly("NQ");
+			assertThat(report.eventTime()).isEqualTo(t(S));
+			Map<?, ?> trigger = (Map<?, ?>) report.evidence().get("trigger");
+			Map<?, ?> target = (Map<?, ?>) report.evidence().get("target");
+			assertThat(trigger.get("symbol")).isEqualTo("YM");
+			assertThat(trigger.get("side")).isEqualTo("LOW");
+			assertThat(target.get("low")).isEqualTo(new BigDecimal("21108.00"));
+			assertThat(target.get("H")).isEqualTo(new BigDecimal("21120.00"));
+			assertThat(target.get("L")).isEqualTo(new BigDecimal("21090.00"));
+			assertThat(target.get("M")).isEqualTo(new BigDecimal("21105.00"));
+		});
+	}
+
+	@Test
+	void qualifyingTargetsGetNoNoEventReport() {
+		allRanges();
+		bar("ES", S, "6027.00", "6028.00");
+		bar("NQ", S, "21100.00", "21104.00");
+		bar("RTY", S, "2179.20", "2179.50");
+		ymBreaksLow(S);
+
+		assertThat(lowBreakSymbols()).containsExactly("ES", "NQ", "RTY");
+		assertThat(noEvents()).isEmpty();
+	}
+
+	@Test
+	void targetThatBrokeItsOwnRangeIsATriggerNotACheckedTarget() {
+		allRanges();
+		ymBreaksLow(S);
+		bar("ES", S, "6025.00", "6028.00", false, true);
+
+		assertThat(noEvents()).extracting(r -> r.scope().getFirst()).doesNotContain("ES");
+	}
+
+	@Test
+	void signalledTargetIsNeverCheckedAgain() {
+		allRanges();
+		bar("ES", S, "6027.00", "6028.00");
+		ymBreaksLow(S);
+		bar("ES", plus(S, 10), "6030.00", "6031.00");
+		ymBreaksLow(plus(S, 10));
+
+		assertThat(noEvents()).extracting(r -> r.scope().getFirst()).doesNotContain("ES");
+	}
+
+	@Test
+	void invalidDayReportsNoCheckResults() {
+		range("NQ");
+		range("YM");
+		range("RTY");
+		bar("ES", S, "6027.00", "6028.00");
+		ymBreaksLow(S);
+
+		assertThat(noEvents()).isEmpty();
 	}
 
 	@Test

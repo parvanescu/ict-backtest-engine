@@ -32,6 +32,8 @@ export interface Bar {
 export type SignalKind = 'REPORT' | 'STATUS' | 'ERROR';
 /** Code of the report a Sequence range sweep emits for the instrument it fired from. */
 export const RANGE_SWEEP_EVENT = 'RANGE_SWEEP_EVENT';
+/** Code of the report for an instrument that was checked after a break and did not qualify; same evidence. */
+export const RANGE_SWEEP_NO_EVENT = 'RANGE_SWEEP_NO_EVENT';
 export type DayStatus = 'UNKNOWN' | 'VALID' | 'INVALID_WINDOW';
 
 /** A message on /topic/signals/{ruleKey}, and an element of GET /api/signals. */

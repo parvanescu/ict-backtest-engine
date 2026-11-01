@@ -1,4 +1,4 @@
-import { RANGE_SWEEP_EVENT, type DayStatus, type Signal } from '../api/types';
+import { RANGE_SWEEP_EVENT, RANGE_SWEEP_NO_EVENT, type DayStatus, type Signal } from '../api/types';
 import { COLORS } from '../theme';
 
 /** Topic name the service publishes to: rule type, then the symbols sorted and unique. */
@@ -23,7 +23,7 @@ export function dayStatusAfter(current: DayStatus, signal: Signal): DayStatus {
   if (signal.kind === 'STATUS' && signal.code === 'INVALID_WINDOW') {
     return 'INVALID_WINDOW';
   }
-  if (signal.code === RANGE_SWEEP_EVENT) {
+  if (signal.code === RANGE_SWEEP_EVENT || signal.code === RANGE_SWEEP_NO_EVENT) {
     return 'VALID';
   }
   return current;
@@ -71,6 +71,34 @@ export function latestEventFor(signals: Signal[], symbol: string): Signal | null
     }
   }
   return null;
+}
+
+/**
+ * The latest check result about {@code symbol}: a sweep event, or a no-event report for an instrument that was
+ * checked after a break and did not qualify. Null when it was never checked.
+ */
+export function latestCheckFor(signals: Signal[], symbol: string): Signal | null {
+  for (let i = signals.length - 1; i >= 0; i--) {
+    const signal = signals[i];
+    if (
+      (signal.code === RANGE_SWEEP_EVENT || signal.code === RANGE_SWEEP_NO_EVENT) &&
+      signal.scope?.[0] === symbol &&
+      signal.eventTime !== undefined
+    ) {
+      return signal;
+    }
+  }
+  return null;
+}
+
+/** A check result as facts: who broke which side, and where the checked instrument's bar was against its range. */
+export function describeCheck(check: Signal): string {
+  const trigger = (check.evidence?.trigger ?? {}) as Record<string, unknown>;
+  const target = (check.evidence?.target ?? {}) as Record<string, unknown>;
+  const low = trigger.side === 'LOW';
+  const side = low ? 'low' : 'high';
+  const levels = low ? `L ${target.L} / M ${target.M}` : `M ${target.M} / H ${target.H}`;
+  return `${trigger.symbol} broke 3-3-3 ${side} ${trigger.price}; ${check.scope?.[0]} ${side} ${target[side]} outside ${levels}`;
 }
 
 /** The reports about {@code symbol}, newest first, at most {@code limit}. */

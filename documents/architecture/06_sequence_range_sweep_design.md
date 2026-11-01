@@ -80,5 +80,6 @@ Known limit: "one event per target per day" keeps the first check decided, not n
 | Kind | When |
 |------|------|
 | `REPORT` `RANGE_SWEEP_EVENT` | A target qualifies, `scope` = the target; `eventTime` = trigger second `s`; evidence: trigger symbol, side, price; target bar time, low or high, `H`, `L`, `M` |
+| `REPORT` `RANGE_SWEEP_NO_EVENT` | A target was checked after a break and does not qualify; `scope` and evidence as for `RANGE_SWEEP_EVENT`, so the target's bar can be read against its `L`, `M`, `H`. Not emitted for a target already signalled, one with no bar up to `s`, or one that broke its own range at `s`. Does not change which targets qualify |
 | `REPORT` `EXTREMITY_PASSED` | Every break, including ones that produce no event |
 | `STATUS` `INVALID_WINDOW` | Some range is missing for the trading day |

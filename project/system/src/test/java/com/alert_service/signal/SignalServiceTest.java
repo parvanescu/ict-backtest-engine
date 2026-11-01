@@ -86,8 +86,8 @@ class SignalServiceTest {
 		service.attach(key);
 		playWorkedExample("2026-10-12");
 
-		List<Signal> live = take(3);
-		assertThat(live).extracting(Signal::id).containsExactly(1L, 2L, 3L);
+		List<Signal> live = take(4);
+		assertThat(live).extracting(Signal::id).containsExactly(1L, 2L, 3L, 4L);
 		assertThat(live.getFirst().kind()).isEqualTo("REPORT");
 
 		SignalHistory history = service.history(key.toString()).orElseThrow();
@@ -100,14 +100,14 @@ class SignalServiceTest {
 	void historyStartsOverOnANewTradingDay() throws InterruptedException {
 		service.attach(key);
 		playWorkedExample("2026-10-12");
-		take(3);
+		take(4);
 		playWorkedExample("2026-10-13");
-		List<Signal> nextDay = take(3);
+		List<Signal> nextDay = take(4);
 
 		SignalHistory history = service.history(key.toString()).orElseThrow();
 		assertThat(history.tradingDay()).isEqualTo(LocalDate.of(2026, 10, 13));
 		assertThat(history.signals()).isEqualTo(nextDay);
-		assertThat(nextDay).extracting(Signal::id).containsExactly(4L, 5L, 6L);
+		assertThat(nextDay).extracting(Signal::id).containsExactly(5L, 6L, 7L, 8L);
 	}
 
 	@Test

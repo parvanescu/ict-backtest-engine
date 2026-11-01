@@ -8,7 +8,7 @@ Listens to aggregate results and decides what reaches users. It holds one subscr
 
 | `RuleResult` kind | Iteration 1 |
 |-------------------|-------------|
-| `REPORT` | Forwarded as a report for the instrument in `scope`, e.g. `RANGE_SWEEP_EVENT` (the rule fired for it) or `EXTREMITY_PASSED` (a break, with or without events) |
+| `REPORT` | Forwarded as a report for the instrument in `scope`, e.g. `RANGE_SWEEP_EVENT` (the rule fired for it), `RANGE_SWEEP_NO_EVENT` (it was checked after a break and did not qualify) or `EXTREMITY_PASSED` (a break, with or without events) |
 | `STATUS` | Forwarded as a status, e.g. `INVALID_WINDOW` (no events possible today) |
 
 The decision lives here, not in the rule, so it can later filter or combine results (e.g. only signal when several rules agree) without touching any rule.
@@ -102,7 +102,7 @@ Every session subscribed to that exact topic receives the error, which is right:
 
 | `kind` | Meaning | `code` |
 |--------|---------|--------|
-| `REPORT` | A fact worth showing about the instrument in `scope` | `RANGE_SWEEP_EVENT`, `EXTREMITY_PASSED` |
+| `REPORT` | A fact worth showing about the instrument in `scope` | `RANGE_SWEEP_EVENT`, `RANGE_SWEEP_NO_EVENT`, `EXTREMITY_PASSED` |
 | `STATUS` | The rule cannot produce events today | `INVALID_WINDOW` |
 | `ERROR` | The subscription is invalid, or starting it failed; text in `message` | `INVALID_SUBSCRIPTION`, `INTERNAL_ERROR` |
 

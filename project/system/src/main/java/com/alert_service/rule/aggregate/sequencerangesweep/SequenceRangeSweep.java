@@ -41,6 +41,11 @@ public final class SequenceRangeSweep extends AggregateRule<RangeBreakEvent, Seq
 			RangeBreakWatch.DESCRIPTOR.type(), RangeBreakEvent.class, 2);
 
 	public static final String RANGE_SWEEP_EVENT = "RANGE_SWEEP_EVENT";
+	/**
+	 * A target was checked after a break and did not qualify. Same evidence as {@link #RANGE_SWEEP_EVENT}. Not
+	 * emitted for a target that was already signalled, had no bar up to the second, or broke its own range then.
+	 */
+	public static final String RANGE_SWEEP_NO_EVENT = "RANGE_SWEEP_NO_EVENT";
 	public static final String EXTREMITY_PASSED = "EXTREMITY_PASSED";
 	public static final String INVALID_WINDOW = "INVALID_WINDOW";
 
@@ -192,10 +197,9 @@ public final class SequenceRangeSweep extends AggregateRule<RangeBreakEvent, Seq
 		boolean qualifies = check.side() == Side.LOW
 				? range.low().compareTo(bar.low()) <= 0 && bar.low().compareTo(range.mean()) < 0
 				: range.mean().compareTo(bar.high()) < 0 && bar.high().compareTo(range.high()) <= 0;
-		if (!qualifies) {
-			return;
+		if (qualifies) {
+			state.signalled.add(check.target());
 		}
-		state.signalled.add(check.target());
 		Map<String, Object> trigger = new LinkedHashMap<>();
 		trigger.put("symbol", check.trigger().symbol());
 		trigger.put("side", check.side().name());
@@ -206,7 +210,7 @@ public final class SequenceRangeSweep extends AggregateRule<RangeBreakEvent, Seq
 		target.put("H", range.high());
 		target.put("L", range.low());
 		target.put("M", range.mean());
-		emit(RuleResult.report(key(), RANGE_SWEEP_EVENT, RangeBreakWatch.LEVEL, List.of(check.target()), check.second(),
-				Map.of("trigger", trigger, "target", target)));
+		emit(RuleResult.report(key(), qualifies ? RANGE_SWEEP_EVENT : RANGE_SWEEP_NO_EVENT, RangeBreakWatch.LEVEL,
+				List.of(check.target()), check.second(), Map.of("trigger", trigger, "target", target)));
 	}
 }
