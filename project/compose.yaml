@@ -31,4 +31,7 @@ services:
       context: ./system
       target: demo
     image: alert-service-demo
-    command: ["--endpoint", "tcp://*:5556", "--speed", "60"]
+    # The simulator page: http://localhost:5557 (loopback only, it has no authentication).
+    command: ["--endpoint", "tcp://*:5556", "--control-host", "0.0.0.0"]
+    ports:
+      - "127.0.0.1:5557:5557"

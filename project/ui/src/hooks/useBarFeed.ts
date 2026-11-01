@@ -18,9 +18,10 @@ export interface BarSink {
 
 /**
  * Live 1-second bars of {@code symbol} plus today's history: subscribe first and buffer, fetch the history, merge by
- * time, then stream. Starts over after a reconnect, since bars may have been missed.
+ * time, then stream. Starts over after a reconnect, since bars may have been missed, and after a data reset
+ * ({@code resetEpoch} changed).
  */
-export function useBarFeed(symbol: string | null, sink: RefObject<BarSink | null>) {
+export function useBarFeed(symbol: string | null, sink: RefObject<BarSink | null>, resetEpoch = 0) {
   const connection = useStomp();
   const { status, epoch } = useConnection();
   const [latest, setLatest] = useState<Bar | null>(null);
@@ -91,7 +92,7 @@ export function useBarFeed(symbol: string | null, sink: RefObject<BarSink | null
       clearTimeout(refresh);
       unsubscribe();
     };
-  }, [connection, symbol, status, epoch, sink]);
+  }, [connection, symbol, status, epoch, sink, resetEpoch]);
 
   return { latest, error };
 }

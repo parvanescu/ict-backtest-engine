@@ -47,7 +47,7 @@ public class SignalService {
 		if (existing != null) {
 			return existing;
 		}
-		SignalStream stream = new SignalStream(key.toString());
+		SignalStream stream = new SignalStream(key);
 		stream.attachment = registry.subscribe(key, SUBSCRIBER_ID, stream::onResult);
 		streams.put(key.toString(), stream);
 		return stream;
@@ -55,6 +55,14 @@ public class SignalService {
 
 	public synchronized Optional<SignalHistory> history(String ruleKey) {
 		return Optional.ofNullable(streams.get(ruleKey)).map(SignalStream::history);
+	}
+
+	/**
+	 * Drops the history of every attached rule and replaces its rule instances with fresh ones, so the next bars are
+	 * judged from a blank slate. Streams, their keys and their users stay; signal ids keep counting up.
+	 */
+	public synchronized void reset() {
+		streams.values().forEach(SignalStream::reset);
 	}
 
 	private synchronized void detach(SignalStream stream) {
@@ -68,14 +76,26 @@ public class SignalService {
 	 */
 	public final class SignalStream implements AutoCloseable {
 
+		private final RuleKey key;
 		private final String ruleKey;
 		private volatile Attachment attachment;
 		private final List<Signal> today = new ArrayList<>();
 		private LocalDate tradingDay;
 		private long nextId = 1;
 
-		private SignalStream(String ruleKey) {
-			this.ruleKey = ruleKey;
+		private SignalStream(RuleKey key) {
+			this.key = key;
+			this.ruleKey = key.toString();
+		}
+
+		/** Called with the service's monitor held. */
+		private void reset() {
+			synchronized (this) {
+				today.clear();
+				tradingDay = null;
+			}
+			attachment.subscription().close();
+			attachment = registry.subscribe(key, SUBSCRIBER_ID, this::onResult);
 		}
 
 		public DayStatus dayStatus() {

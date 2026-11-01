@@ -113,6 +113,10 @@ Every session subscribed to that exact topic receives the error, which is right:
 
 Fields without a value are left out of the JSON.
 
+## Reset: start the day over
+
+`POST /api/reset` (`Content-Type: application/json`, any JSON body, answer `204`) drops the stored bars ([[10_live_bars]]) and the signal history, and replaces the instances of every running rule with fresh ones, so the next bars are judged from a blank slate (day status `UNKNOWN`). The rules keep running for their users and signal ids keep counting up. Another content type is refused (`415`), which also makes a browser send a CORS preflight, so only the allowed origins can call it. It is meant for trying scenarios one after the other without restarting the service.
+
 ## History: what was emitted before the client subscribed
 
 `GET /api/signals/{ruleKey}` (URL-encode the key) returns the day status and the current trading day's signals of a running rule; 404 if nobody runs it.

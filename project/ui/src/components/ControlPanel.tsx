@@ -1,4 +1,5 @@
-import { Badge, Divider, Stack, Switch, TagsInput, Text } from '@mantine/core';
+import { Badge, Button, Divider, Stack, Switch, TagsInput, Text } from '@mantine/core';
+import { useState } from 'react';
 import type { DayStatus } from '../api/types';
 
 const DAY_STATUS: Record<DayStatus, { color: string; label: string }> = {
@@ -14,10 +15,12 @@ interface Props {
   running: boolean;
   onRunning(running: boolean): void;
   dayStatus: DayStatus;
+  onReset(): Promise<void>;
 }
 
 export function ControlPanel(props: Props) {
   const status = DAY_STATUS[props.dayStatus];
+  const [resetting, setResetting] = useState(false);
   return (
     <Stack gap="md">
       <div>
@@ -49,6 +52,21 @@ export function ControlPanel(props: Props) {
           {status.label}
         </Badge>
       )}
+
+      <Button
+        variant="light"
+        color="gray"
+        loading={resetting}
+        onClick={() => {
+          setResetting(true);
+          props.onReset().finally(() => setResetting(false));
+        }}
+      >
+        Reset data
+      </Button>
+      <Text size="xs" c="dimmed">
+        Clears the day's bars, signals and rule state in the service and on screen. The rule keeps running.
+      </Text>
 
       <Divider />
 

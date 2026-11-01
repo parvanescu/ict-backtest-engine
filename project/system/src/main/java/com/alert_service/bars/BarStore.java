@@ -53,6 +53,11 @@ public class BarStore {
 		bySymbol.computeIfAbsent(bar.symbol(), DayBars::new).append(bar, day);
 	}
 
+	/** Drops every stored bar of every symbol. */
+	public void clear() {
+		bySymbol.clear();
+	}
+
 	public Snapshot since(String symbol, Instant from) {
 		DayBars bars = bySymbol.get(symbol);
 		if (bars == null) {

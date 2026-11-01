@@ -56,7 +56,17 @@ const DRAG_PIXELS = 3;
  * The 1-second bars of one symbol as four lines (open, high, low, close), with the rule's results as markers and
  * the 3-3-3 range as dashed lines. Times are New York time.
  */
-export function PriceChart({ symbol, signals, height }: { symbol: string; signals: Signal[]; height: number }) {
+export function PriceChart({
+  symbol,
+  signals,
+  height,
+  resetEpoch,
+}: {
+  symbol: string;
+  signals: Signal[];
+  height: number;
+  resetEpoch: number;
+}) {
   const container = useRef<HTMLDivElement>(null);
   const parts = useRef<ChartParts | null>(null);
   const markerSpecs = useRef<MarkerSpec[]>([]);
@@ -182,7 +192,7 @@ export function PriceChart({ symbol, signals, height }: { symbol: string; signal
     };
   }, []);
 
-  const { latest, error } = useBarFeed(symbol, sink);
+  const { latest, error } = useBarFeed(symbol, sink, resetEpoch);
 
   const markers = useMemo(() => markersFor(signals, symbol), [signals, symbol]);
   const range = useMemo(() => rangeLevelsFor(signals, symbol), [signals, symbol]);
