@@ -37,9 +37,6 @@
 
 ## Business context
 
-Read this section at the start of every session to know what scenario we're
-working in from a business point of view.
-
 - **What it is**: An open-source (MIT-licensed) desktop application,
   currently developed in a private repository (see
   [LICENSE](./LICENSE)).
