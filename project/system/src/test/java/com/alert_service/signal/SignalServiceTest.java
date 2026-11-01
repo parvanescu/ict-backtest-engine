@@ -82,6 +82,22 @@ class SignalServiceTest {
 	}
 
 	@Test
+	void resetClearsHistoryAndJudgesTheDayAgain() throws InterruptedException {
+		service.attach(key);
+		playWorkedExample("2026-10-12");
+		assertThat(take(3)).extracting(Signal::id).containsExactly(1L, 2L, 3L);
+
+		service.reset();
+
+		SignalHistory history = service.history(key.toString()).orElseThrow();
+		assertThat(history.signals()).isEmpty();
+		assertThat(history.dayStatus()).isEqualTo(DayStatus.UNKNOWN);
+
+		playWorkedExample("2026-10-12");
+		assertThat(take(3)).extracting(Signal::id).containsExactly(4L, 5L, 6L);
+	}
+
+	@Test
 	void numbersSignalsAndKeepsTodaysHistory() throws InterruptedException {
 		service.attach(key);
 		playWorkedExample("2026-10-12");

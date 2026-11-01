@@ -48,6 +48,18 @@ class BarStoreTest {
 	}
 
 	@Test
+	void clearDropsAllBars() {
+		store.append(bar("ES", "2026-10-12T13:45:00Z", "6030"));
+		store.append(bar("NQ", "2026-10-12T13:45:00Z", "21100"));
+
+		store.clear();
+
+		assertThat(store.since("ES", null).bars()).isEmpty();
+		assertThat(store.since("ES", null).tradingDay()).isNull();
+		assertThat(store.since("NQ", null).bars()).isEmpty();
+	}
+
+	@Test
 	void unknownSymbolHasNothing() {
 		Snapshot snapshot = store.since("YM", null);
 

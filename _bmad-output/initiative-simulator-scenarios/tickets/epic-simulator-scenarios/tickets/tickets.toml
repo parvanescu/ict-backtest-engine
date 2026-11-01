@@ -1,0 +1,32 @@
+[[entry]]
+id = 1
+type = "story"
+title = "Reset data from the main UI"
+description = "A Reset data button clears the service's stored bars, signals and rule state and the UI's charts and reports."
+verify = "After a bar and a signal exist, pressing Reset data leaves GET /api/bars and /api/signals empty and the charts and reports empty; the rule keeps running and reports on bars played afterwards."
+covers = ["R4"]
+after = []
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Four scenarios inside the 3-3-2 to 3-4-1 window"
+description = "The simulator plays scenarios that start at 09:22:30 and end at 10:52:30, with four scenarios covering what the rule reports and ignores."
+verify = "Each scenario, played against the service, produces exactly its listed events and no bar falls outside 09:22:30 to 10:52:30."
+covers = ["R1", "R2"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Simulator page to run scenarios"
+description = "The simulator serves a page to pick a scenario and speed, play and stop it, and read its expected events."
+verify = "In docker compose, open the simulator page, play a scenario, see its events in the main UI, press Reset data, play another."
+covers = ["R3"]
+after = [2]
+hitl = false
+risk = "low"
