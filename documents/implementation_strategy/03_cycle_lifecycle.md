@@ -42,13 +42,13 @@ flowchart TD
 
 Example: a bullish result on a 90-min cycle that lies inside a NY AM session which is also bullish is higher confidence than the same result against the session's direction. How levels are prioritised is an open question in [[00_rules_engine]].
 
-## Cross-session context (UTC)
+## Cross-session context (New York time)
 
-| Session | UTC | Context it carries |
+| Session | NY | Context it carries |
 |---------|-----|--------------------|
-| Asia (Q1) | 22:00-04:00 | Its high/low become the day's first range |
-| London (Q2) | 04:00-10:00 | Expected to take out Asia's high or low |
-| NY AM (Q3) | 10:00-16:00 | Expected to move opposite to London's sweep |
+| Asia (Q1) | 18:00-00:00 | Its high/low become the day's first range |
+| London (Q2) | 00:00-06:00 | Expected to take out Asia's high or low |
+| NY AM (Q3) | 06:00-12:00 | Expected to move opposite to London's sweep |
 
 ```mermaid
 sequenceDiagram

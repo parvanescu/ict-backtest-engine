@@ -1,7 +1,7 @@
 # Daye's Quarterly Theory
 
 > Learning document. Describes the strategy conceptually before any implementation.
-> All times are **UTC**, always. No local time zones and no daylight saving. The theory is traditionally described in New York time; this project instead uses a fixed UTC grid (see [[02_time_model]]).
+> Timestamps are **UTC**, always. The grid itself is anchored to the market open, **18:00 New York time**, so it follows US daylight saving: in UTC it starts at 22:00 (EDT) or 23:00 (EST). Times below are New York time (see [[02_time_model]]).
 > Treat the exact boundaries below as the working definition for this project; verify against your own source material and adjust.
 
 > Implementation scope for this project: [[00_overview]]
@@ -28,14 +28,14 @@ The same 4-quarter structure repeats across scales. Each cycle's quarters are ma
 | Yearly | 12 months | Jan–Mar | Apr–Jun | Jul–Sep | Oct–Dec |
 | Monthly | ~4 weeks | Week 1 | Week 2 | Week 3 | Week 4 |
 | Weekly | Mon–Thu (Fri = extension) | Monday | Tuesday | Wednesday | Thursday |
-| Daily | 24 h (22:00–22:00 UTC) | 22:00–04:00 (Asia) | 04:00–10:00 (London) | 10:00–16:00 (NY AM) | 16:00–22:00 (NY PM) |
+| Daily | 24 h (18:00–18:00 NY) | 18:00–00:00 (Asia) | 00:00–06:00 (London) | 06:00–12:00 (NY AM) | 12:00–18:00 (NY PM) |
 | 6-hour | 6 h | 1.5 h | 1.5 h | 1.5 h | 1.5 h |
 | 90-minute | 90 min | 22.5 min | 22.5 min | 22.5 min | 22.5 min |
 
 Notes:
-- The trading day opens at the fixed **22:00 UTC** grid line, not at midnight. The session names are only labels for the four 6-hour quarters.
+- The trading day opens at **18:00 New York**, the CME Globex open, not at midnight. The session names are only labels for the four 6-hour quarters.
 - A 90-minute cycle is the daily cycle scaled down: a day contains 16 of them, a 6-hour block contains 4.
-- 90-minute cycles are anchored at 22:00 UTC: 22:00, 23:30, 01:00, 02:30, 04:00, 05:30, ...
+- 90-minute cycles are anchored at 18:00 New York: 18:00, 19:30, 21:00, 22:30, 00:00, 01:30, ...
 - The scale you trade determines the scale you read. A Q3 on the daily cycle contains its own Q1–Q4 on the 90-minute cycle.
 
 ## 3. Key reference levels
