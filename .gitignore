@@ -39,3 +39,5 @@ desktop.ini
 HELP.md
 
 .claude
+# Installed agent skills: restore with `npx skills experimental_install` (from skills-lock.json)
+.agents/
