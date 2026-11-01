@@ -1,7 +1,7 @@
 import { Badge, Group, Paper, Text } from '@mantine/core';
 import { useMemo } from 'react';
-import type { Signal } from '../api/types';
-import { latestEventFor } from '../lib/signals';
+import { RANGE_SWEEP_NO_EVENT, type Signal } from '../api/types';
+import { latestCheckFor } from '../lib/signals';
 import { formatNyTime } from '../lib/time';
 import { COLORS } from '../theme';
 import { PriceChart } from './PriceChart';
@@ -19,16 +19,19 @@ export function InstrumentPanel({
   signals: Signal[];
   resetEpoch: number;
 }) {
+   const check = useMemo(() => latestCheckFor(signals, symbol), [signals, symbol]);
   const event = useMemo(() => latestEventFor(signals, symbol), [signals, symbol]);
+
   return (
     <Paper p="xs" withBorder style={{ background: COLORS.background, borderColor: COLORS.grid }}>
       <Group justify="space-between" mb={4} wrap="nowrap">
         <Text fw={700} c={COLORS.text}>
           {symbol}
         </Text>
-        {event && (
-          <Badge color="gray" variant="light">
-            Sweep event at {formatNyTime(Date.parse(event.eventTime!) / 1000)}
+        {check && (
+          <Badge color="gray" variant={check.code === RANGE_SWEEP_NO_EVENT ? 'outline' : 'light'}>
+            {check.code === RANGE_SWEEP_NO_EVENT ? 'Checked, no event' : 'Sweep event'} at{' '}
+            {formatNyTime(Date.parse(check.eventTime!) / 1000)}
           </Badge>
         )}
       </Group>

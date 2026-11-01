@@ -144,9 +144,17 @@ class RuleRegistryTest {
 		RuleResult report = results.poll(5, TimeUnit.SECONDS);
 		RuleResult first = results.poll(5, TimeUnit.SECONDS);
 		RuleResult second = results.poll(5, TimeUnit.SECONDS);
+		RuleResult third = results.poll(5, TimeUnit.SECONDS);
 		assertThat(report).isNotNull();
 		assertThat(report.kind()).isEqualTo(RuleResult.Kind.REPORT);
-		assertThat(List.of(first, second)).extracting(r -> r.scope().getFirst()).containsExactlyInAnyOrder("ES", "RTY");
+		List<RuleResult> checked = List.of(first, second, third);
+		assertThat(checked).extracting(r -> r.scope().getFirst()).containsExactlyInAnyOrder("ES", "NQ", "RTY");
+		assertThat(checked).filteredOn(r -> "RANGE_SWEEP_EVENT".equals(r.code()))
+			.extracting(r -> r.scope().getFirst())
+			.containsExactlyInAnyOrder("ES", "RTY");
+		assertThat(checked).filteredOn(r -> "RANGE_SWEEP_NO_EVENT".equals(r.code()))
+			.extracting(r -> r.scope().getFirst())
+			.containsExactly("NQ");
 		assertThat(results.poll(200, TimeUnit.MILLISECONDS)).isNull();
 	}
 

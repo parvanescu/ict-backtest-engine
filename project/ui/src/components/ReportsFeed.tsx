@@ -1,7 +1,7 @@
 import { Box, ScrollArea, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
-import { RANGE_SWEEP_EVENT, type Signal } from '../api/types';
-import { reportsFor } from '../lib/signals';
+import { RANGE_SWEEP_EVENT, RANGE_SWEEP_NO_EVENT, type Signal } from '../api/types';
+import { describeCheck, reportsFor } from '../lib/signals';
 import { formatNyTime } from '../lib/time';
 import { COLORS } from '../theme';
 
@@ -38,7 +38,25 @@ export function ReportsFeed({ symbol, signals, height }: { symbol: string; signa
 }
 
 function ReportRow({ report }: { report: Signal }) {
-  return report.code === RANGE_SWEEP_EVENT ? <EventRow report={report} /> : <ExtremityRow report={report} />;
+  if (report.code === RANGE_SWEEP_EVENT) {
+    return <EventRow report={report} />;
+  }
+  return report.code === RANGE_SWEEP_NO_EVENT ? <NoEventRow report={report} /> : <ExtremityRow report={report} />;
+}
+
+/** An instrument that was checked after a break and did not qualify, as facts. */
+function NoEventRow({ report }: { report: Signal }) {
+  return (
+    <Text size="xs" ff="monospace" c={COLORS.text}>
+      <Text span c={COLORS.muted} inherit>
+        {report.eventTime ? formatNyTime(Date.parse(report.eventTime) / 1000) : '—'}
+      </Text>{' '}
+      <Text span c={COLORS.muted} inherit>
+        Checked, no event:
+      </Text>{' '}
+      {describeCheck(report)}
+    </Text>
+  );
 }
 
 /** A range sweep event, as facts: which instrument broke which side, and where this instrument's bar was. */

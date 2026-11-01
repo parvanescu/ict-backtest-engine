@@ -3,6 +3,8 @@ import type { Signal } from '../api/types';
 import {
   canonicalRuleKey,
   dayStatusAfter,
+  describeCheck,
+  latestCheckFor,
   latestEventFor,
   markersFor,
   mergeSignals,
@@ -72,6 +74,55 @@ describe('latestEventFor', () => {
   });
 });
 
+const noEventNq: Signal = {
+  id: 3,
+  ruleKey: KEY,
+  kind: 'REPORT',
+  code: 'RANGE_SWEEP_NO_EVENT',
+  scope: ['NQ'],
+  eventTime: '2026-10-12T14:12:40Z',
+  evidence: {
+    trigger: { symbol: 'YM', side: 'LOW', price: 44168 },
+    target: { barTime: '2026-10-12T14:12:40Z', low: 21108, H: 21120, L: 21090, M: 21105 },
+  },
+};
+
+describe('latestCheckFor', () => {
+  it('finds the newest check result about the symbol, event or no event', () => {
+    expect(latestCheckFor([report, eventEs, noEventNq], 'NQ')).toBe(noEventNq);
+    expect(latestCheckFor([report, eventEs, noEventNq], 'ES')).toBe(eventEs);
+  });
+
+  it('is null for a symbol that was never checked, and ignores other reports', () => {
+    expect(latestCheckFor([report, eventEs, noEventNq], 'YM')).toBeNull();
+    expect(latestCheckFor([], 'ES')).toBeNull();
+  });
+
+  it('takes the later of two checks about the same symbol', () => {
+    const later: Signal = { ...noEventNq, id: 9, eventTime: '2026-10-12T14:20:15Z' };
+
+    expect(latestCheckFor([noEventNq, later], 'NQ')).toBe(later);
+  });
+});
+
+describe('describeCheck', () => {
+  it('states the trigger and the target bar against its range, as facts', () => {
+    expect(describeCheck(noEventNq)).toBe('YM broke 3-3-3 low 44168; NQ low 21108 outside L 21090 / M 21105');
+  });
+
+  it('uses the high side for a high break', () => {
+    const high: Signal = {
+      ...noEventNq,
+      evidence: {
+        trigger: { symbol: 'YM', side: 'HIGH', price: 44245 },
+        target: { high: 21100, H: 21120, L: 21090, M: 21105 },
+      },
+    };
+
+    expect(describeCheck(high)).toBe('YM broke 3-3-3 high 44245; NQ high 21100 outside M 21105 / H 21120');
+  });
+});
+
 describe('reportsFor', () => {
   it('lists the reports about the symbol, newest first, up to the limit', () => {
     const reports = [1, 2, 3].map((id): Signal => ({ ...report, id }));
@@ -93,6 +144,7 @@ describe('dayStatusAfter', () => {
   it('follows statuses and events', () => {
     expect(dayStatusAfter('UNKNOWN', report)).toBe('UNKNOWN');
     expect(dayStatusAfter('UNKNOWN', eventEs)).toBe('VALID');
+    expect(dayStatusAfter('UNKNOWN', noEventNq)).toBe('VALID');
     expect(dayStatusAfter('UNKNOWN', { ruleKey: KEY, kind: 'STATUS', code: 'INVALID_WINDOW' })).toBe(
       'INVALID_WINDOW',
     );

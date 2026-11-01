@@ -117,17 +117,21 @@ class StompEndToEndTest {
 		publish("RTY", "2026-10-12T14:12:40Z", "2179.50", "2179.20");
 		publish("YM", "2026-10-12T14:12:40Z", "44175.00", "44168.00");
 
-		List<Map<String, Object>> live = take(signals, 3);
-		assertThat(live).extracting(s -> s.get("id")).containsExactly(1, 2, 3);
+		List<Map<String, Object>> live = take(signals, 4);
+		assertThat(live).extracting(s -> s.get("id")).containsExactly(1, 2, 3, 4);
 		assertThat(live.getFirst()).containsEntry("kind", "REPORT")
 			.containsEntry("code", "EXTREMITY_PASSED")
 			.containsEntry("scope", List.of("YM"));
-		assertThat(live.subList(1, 3)).allSatisfy(s -> assertThat(s).containsEntry("kind", "REPORT")
-			.containsEntry("code", "RANGE_SWEEP_EVENT")
+		List<Map<String, Object>> checks = live.subList(1, 4);
+		assertThat(checks).allSatisfy(s -> assertThat(s).containsEntry("kind", "REPORT")
 			.doesNotContainKey("verdict")
 			.containsEntry("eventTime", "2026-10-12T14:12:40Z"));
-		assertThat(live.subList(1, 3)).extracting(s -> String.valueOf(((List<?>) s.get("scope")).getFirst()))
+		assertThat(checks).filteredOn(s -> "RANGE_SWEEP_EVENT".equals(s.get("code")))
+			.extracting(s -> String.valueOf(((List<?>) s.get("scope")).getFirst()))
 			.containsExactlyInAnyOrder("ES", "RTY");
+		assertThat(checks).filteredOn(s -> "RANGE_SWEEP_NO_EVENT".equals(s.get("code")))
+			.extracting(s -> String.valueOf(((List<?>) s.get("scope")).getFirst()))
+			.containsExactly("NQ");
 
 		List<Map<String, Object>> bars = take(esBars, 3);
 		assertThat(bars).allSatisfy(b -> assertThat(b).containsEntry("type", "BAR").containsEntry("symbol", "ES"));
