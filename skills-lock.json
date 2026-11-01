@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "bmad": {
+      "source": "bmad-code-org/BMAD-METHOD",
+      "sourceType": "github",
+      "skillPath": "skills/bmad/SKILL.md",
+      "computedHash": "00c50dd4ce6614a810d458f58028a72cd4f028e7aacdeacf5fcfeb54af82fc87"
+    },
     "bmad-advanced-elicitation": {
       "source": "bmad-code-org/BMAD-METHOD",
       "sourceType": "github",
