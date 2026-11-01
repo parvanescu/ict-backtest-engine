@@ -5,7 +5,7 @@ Part of [[00_rules_engine]]. Time grid in [[02_time_model]]; data in [[06_market
 ## Name
 
 This rule was first called "diagonal opens". It no longer compares opening prices between intervals, so the name was dropped. Public material that describes similar ideas:
-- ICT **Turtle Soup**: price sweeps a range high/low (liquidity), then the breakout fails and price reverses. Sweep of highs gives SHORT, sweep of lows gives LONG.
+- ICT **Turtle Soup**: price sweeps a range high/low (liquidity), then the breakout fails and price reverses.
 - ICT **premium / discount**: a range is split at its 50% level; the upper half is premium, the lower half is discount.
 - Daye's Quarterly Theory indicators on TradingView (for example "Quarter Sequence Chains") show chains of consecutive quarters across nested levels, which is the 3-3-3 → 3-3-4 sequence used here.
 
@@ -46,13 +46,13 @@ The four instruments are compared with each other. Notation: `X` is the instrume
 2. **Watch every 1-second bar of 3-3-4** [10:07:30, 10:30:00). For each second `s`:
    - **Trigger**: an instrument `X` has a bar at `s` that breaks its own extremity: `X.high > X.H` (high break) or `X.low < X.L` (low break).
    - **Check each other instrument `Y` separately**, using its 1s bar at the same second `s`. The check uses the same side as the break, not the close.
-     - **Low break**: `Y` qualifies if its `low` is in the lower half of its own range: `Y.L <= Y.low < Y.M`. → **BUY signal for `Y`**.
-     - **High break**: `Y` qualifies if its `high` is in the upper half of its own range: `Y.M < Y.high <= Y.H`. → **SHORT signal for `Y`**.
-   - An instrument that does not qualify (for example its low is still above its mean) simply gets no signal. The other instruments are **not** held back by it: the three others do not all need to agree.
+     - **Low break**: `Y` qualifies if its `low` is in the lower half of its own range: `Y.L <= Y.low < Y.M`. → **event for `Y`** (low-break side).
+     - **High break**: `Y` qualifies if its `high` is in the upper half of its own range: `Y.M < Y.high <= Y.H`. → **event for `Y`** (high-break side).
+   - An instrument that does not qualify (for example its low is still above its mean) simply gets no event. The other instruments are **not** held back by it: the three others do not all need to agree.
    - An instrument that has itself broken its range at second `s` is not a target (it is a trigger, not a candidate).
-3. **Signal**: each qualifying instrument gets its own signal **in 3-3-4, at the moment the break and its mean check are complete**, i.e. when the 1s bars of second `s` of `X` and `Y` have been received. With 1-second bars that is about `s + 1 s`. There is no waiting for 3-4-1.
+3. **Event report**: each qualifying instrument gets its own event report **in 3-3-4, at the moment the break and its mean check are complete**, i.e. when the 1s bars of second `s` of `X` and `Y` have been received. With 1-second bars that is about `s + 1 s`. There is no waiting for 3-4-1.
 
-In words: when one instrument breaks its range, look at each of the other instruments at that second. The ones whose price has already reached the matching half of their own range (below the mean for a low break, above the mean for a high break, while still inside the range) get the signal. The others are ignored.
+In words: when one instrument breaks its range, look at each of the other instruments at that second. The ones whose price has already reached the matching half of their own range (below the mean for a low break, above the mean for a high break, while still inside the range) get an event. The others are ignored. The event states facts (which instrument broke which side, where the target's price is against its own range); it says nothing about what to do.
 
 ```mermaid
 flowchart TD
@@ -62,9 +62,9 @@ flowchart TD
     B -- "X breaks high" --> D["for each other Y at second s"]
     C --> E{"Y.L <= Y.low < Y.M ?"}
     D --> F{"Y.M < Y.high <= Y.H ?"}
-    E -- yes --> G["Signal BUY for Y"]
-    E -- no --> H["No signal for Y"]
-    F -- yes --> I["Signal SHORT for Y"]
+    E -- yes --> G["Event for Y"]
+    E -- no --> H["No event for Y"]
+    F -- yes --> I["Event for Y"]
     F -- no --> H
     G --> B
     H --> B
@@ -78,7 +78,7 @@ flowchart TD
 | 18:00 to 09:45:00 | none | Listen and aggregate bars |
 | 09:45:00-10:07:30 | running `H`, `L` for each of the 4 instruments | Update extremes with each bar |
 | 10:07:30 | `H`, `L`, `M` for each instrument frozen | Store 12 numbers |
-| 10:07:30-10:30:00 | each 1s bar of each instrument | Detect a break by `X`; at that second test each other `Y` against its own `M`; **send a signal for each `Y` that qualifies** |
+| 10:07:30-10:30:00 | each 1s bar of each instrument | Detect a break by `X`; at that second test each other `Y` against its own `M`; **report an event for each `Y` that qualifies** |
 | 10:30:00 | none | Watch ends for the day |
 
 ## Worked example (made-up prices)
@@ -96,13 +96,13 @@ At 10:12:40 YM's bar has `low` 44168.00 < L 44180.00: **trigger, low break** by 
 
 | Instrument | low at 10:12:40 | L | M | L <= low < M ? | Result |
 |------------|-----------------|---|---|----------------|--------|
-| ES | 6027.00 | 6026.00 | 6029.00 | yes | **BUY ES** |
-| NQ | 21108.00 | 21090.00 | 21105.00 | no (above M) | no signal |
-| RTY | 2179.20 | 2178.00 | 2181.50 | yes | **BUY RTY** |
+| ES | 6027.00 | 6026.00 | 6029.00 | yes | **event ES** |
+| NQ | 21108.00 | 21090.00 | 21105.00 | no (above M) | no event |
+| RTY | 2179.20 | 2178.00 | 2181.50 | yes | **event RTY** |
 
-Signals: **BUY ES** and **BUY RTY** at about 10:12:41. NQ is not on the matching side of its mean, so it is skipped without blocking the others. YM, the trigger, gets no signal.
+Events: **ES** and **RTY** at about 10:12:41. NQ is not on the matching side of its mean, so it is skipped without blocking the others. YM, the trigger, gets no signal.
 
-High break is the mirror: if YM's `high` exceeds 44240.00, each other instrument whose `high` at that second satisfies `M < high <= H` (for ES between 6029.00 and 6032.00, for NQ between 21105.00 and 21120.00, for RTY between 2181.50 and 2185.00) gets a **SHORT** signal.
+High break is the mirror: if YM's `high` exceeds 44240.00, each other instrument whose `high` at that second satisfies `M < high <= H` (for ES between 6029.00 and 6032.00, for NQ between 21105.00 and 21120.00, for RTY between 2181.50 and 2185.00) gets an event.
 
 ## Output
 
@@ -110,11 +110,11 @@ High break is the mirror: if YM's `high` exceeds 44240.00, each other instrument
 |-------|-------|
 | `rule` | Sequence range sweep |
 | `scope` | One instrument (a target `Y` that qualified) |
-| `verdict` | `BULLISH` (BUY) after a low break, `BEARISH` (SHORT) after a high break |
-| `time` | The second `s` of the trigger, and the time the signal was produced |
+| `kind`, `code` | `REPORT`, `RANGE_SWEEP_EVENT` (a fact report, not a directional call) |
+| `time` | The second `s` of the trigger, and the time the event was produced |
 | `evidence` | Trigger instrument and bar (time, high or low), the target's `low` (or `high`), `H`, `L`, `M` |
 
-An "extremity passed" event is also reported for every break, including ones that produce no signal.
+An "extremity passed" event is also reported for every break, including ones that produce no event.
 
 ## Bar size
 
@@ -145,9 +145,9 @@ Things to settle if this is pursued:
 - Each other instrument is judged **on its own**; the others do not all need to qualify (earlier versions required all three).
 - "In that range" is read as: the target's `low` (low break) is in the lower half of its own 3-3-3 range, `L <= low < M`, or its `high` (high break) is in the upper half, `M < high <= H`. Alternative: only the mean test (`low < M` / `high > M`) without the requirement to stay inside the range. Under that alternative an instrument that has already broken its own range would also qualify.
 - The mean check uses the **low** (low break) or **high** (high break) of the target's bar, not the close. Because a bar's low is never above its close, this passes more easily than a close-based test.
-- The trigger is only the break of an extremity by `X`. `X`'s own price is not compared with its own mean, and `X` gets no signal for this trigger.
-- The signal direction follows the discount/premium mapping: low break gives BUY, high break gives SHORT.
+- The trigger is only the break of an extremity by `X`. `X`'s own price is not compared with its own mean, and `X` gets no event for this trigger.
+- The event carries the side that was broken (`LOW` or `HIGH`) as a fact, and no direction or recommendation.
 - "Same second": the 1s bar with the same start time as `X`'s breaking bar. If an instrument has no bar in that second (no trades), its latest known bar is used (alternative: it does not qualify).
-- The signal carries no entry price; it states the second and the evidence. Should it include a price reference?
-- Repeated signals: a target can qualify again at a later trigger. Currently assumed: **one signal per target instrument per day** (the first time it qualifies). Alternative: allow repeats.
+- The event carries no entry price; it states the second and the evidence. Should it include a price reference?
+- Repeated events: a target can qualify again at a later trigger. Currently assumed: **one event per target instrument per day** (the first time it qualifies). Alternative: allow repeats.
 - Instruments breaking in both directions at different seconds: each trigger is evaluated on its own.

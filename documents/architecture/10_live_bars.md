@@ -61,9 +61,9 @@ Highlighting a signal needs only the signal itself:
 | Chart element | From the signal |
 |---------------|-----------------|
 | Marker position | `eventTime` (the trigger second) on the instrument in `scope` |
-| Marker style | `verdict`: `BULLISH` (BUY) or `BEARISH` (SHORT) |
+| Marker style | One neutral marker for every `RANGE_SWEEP_EVENT`, whatever the side |
 | Trigger break | `REPORT` `EXTREMITY_PASSED`: `scope` is the instrument that broke, `evidence.price` and `evidence.level` |
-| 3-3-3 range lines | `evidence.target.H`, `L`, `M` of a `RESULT` |
+| 3-3-3 range lines | `evidence.target.H`, `L`, `M` of a `RANGE_SWEEP_EVENT` |
 | Day banner | `STATUS` `INVALID_WINDOW`, or `dayStatus` from the history call |
 
 Bars only go to the local UI, through a server listening on localhost, so the service still does not redistribute market data (README).

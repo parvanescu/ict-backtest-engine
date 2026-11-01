@@ -8,9 +8,8 @@ Listens to aggregate results and decides what reaches users. It holds one subscr
 
 | `RuleResult` kind | Iteration 1 |
 |-------------------|-------------|
-| `RESULT` | Becomes a signal: a verdict for one instrument |
-| `REPORT` | Forwarded as a notice, e.g. `EXTREMITY_PASSED` (a break, with or without signals) |
-| `STATUS` | Forwarded as a status, e.g. `INVALID_WINDOW` (no signals possible today) |
+| `REPORT` | Forwarded as a report for the instrument in `scope`, e.g. `RANGE_SWEEP_EVENT` (the rule fired for it) or `EXTREMITY_PASSED` (a break, with or without events) |
+| `STATUS` | Forwarded as a status, e.g. `INVALID_WINDOW` (no events possible today) |
 
 The decision lives here, not in the rule, so it can later filter or combine results (e.g. only signal when several rules agree) without touching any rule.
 
@@ -21,10 +20,10 @@ Wording stays factual, never directive (see the README's legal section):
   "id": 2,
   "ruleKey": "SEQUENCE_RANGE_SWEEP[ES,NQ,RTY,YM]",
   "rule": "SEQUENCE_RANGE_SWEEP",
-  "kind": "RESULT",
+  "kind": "REPORT",
+  "code": "RANGE_SWEEP_EVENT",
   "level": "L3_22_5M",
   "scope": ["ES"],
-  "verdict": "BULLISH",
   "eventTime": "2026-10-12T14:12:40Z",
   "evidence": {
     "trigger": { "symbol": "YM", "side": "LOW", "price": 44168.00 },
@@ -67,7 +66,7 @@ destination:/topic/signals/SEQUENCE_RANGE_SWEEP[ES,NQ,RTY,YM]
 MESSAGE                          ← service, for that subscription
 subscription:sub-0
 destination:/topic/signals/SEQUENCE_RANGE_SWEEP[ES,NQ,RTY,YM]
-{"id":2,"kind":"RESULT","scope":["ES"],"verdict":"BULLISH",...}
+{"id":2,"kind":"REPORT","code":"RANGE_SWEEP_EVENT","scope":["ES"],...}
 ```
 
 ### Subscribing is the only command
@@ -103,9 +102,8 @@ Every session subscribed to that exact topic receives the error, which is right:
 
 | `kind` | Meaning | `code` |
 |--------|---------|--------|
-| `RESULT` | A signal: `verdict` `BULLISH` (BUY) or `BEARISH` (SHORT) for the instrument in `scope` | - |
-| `REPORT` | A fact worth showing, no verdict | `EXTREMITY_PASSED` |
-| `STATUS` | The rule cannot produce signals today | `INVALID_WINDOW` |
+| `REPORT` | A fact worth showing about the instrument in `scope` | `RANGE_SWEEP_EVENT`, `EXTREMITY_PASSED` |
+| `STATUS` | The rule cannot produce events today | `INVALID_WINDOW` |
 | `ERROR` | The subscription is invalid, or starting it failed; text in `message` | `INVALID_SUBSCRIPTION`, `INTERNAL_ERROR` |
 
 ```json
@@ -121,7 +119,7 @@ Fields without a value are left out of the JSON.
 
 ```json
 { "ruleKey": "SEQUENCE_RANGE_SWEEP[ES,NQ,RTY,YM]", "dayStatus": "VALID", "tradingDay": "2026-10-12",
-  "signals": [ { "id": 1, "kind": "REPORT", ... }, { "id": 2, "kind": "RESULT", ... } ] }
+  "signals": [ { "id": 1, "kind": "REPORT", ... }, { "id": 2, "kind": "REPORT", "code": "RANGE_SWEEP_EVENT", ... } ] }
 ```
 
 `dayStatus` is `UNKNOWN` (not judged yet today; judged when 3-3-4 starts), `VALID` or `INVALID_WINDOW`. The history lives as long as the rule instance: when the last subscriber leaves, the instance and its history are dropped.

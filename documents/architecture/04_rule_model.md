@@ -58,7 +58,7 @@ A rule that starts watching after the data it needs began cannot be correct: the
 | Basic | `earliestBlock` (a [[01_time_grid]] block) | Its first bar of the day starts before `earliestBlock`. An invalid basic rule does not report its normal facts; it reports that it has none (for the range watch: `RangeUnavailable`), so its listeners can decide instead of waiting. |
 | Aggregate | The facts it needs before it can judge the day | It received every required fact, live |
 
-This also covers sharing: an aggregate attached too late to a running basic rule missed the facts (it sees later facts without the earlier ones), and one whose basic rule started too late is told so. Either way the day is reported as a `STATUS` result `INVALID_WINDOW`. The base classes do the day bookkeeping: a new `RuleState` at the first event of each trading day, and for basic rules the `earliestBlock` check.
+This also covers sharing: an aggregate attached too late to a running basic rule missed the facts (it sees later facts without the earlier ones), and one whose basic rule started too late is told so. Either way the day is reported as a `STATUS` `INVALID_WINDOW`. The base classes do the day bookkeeping: a new `RuleState` at the first event of each trading day, and for basic rules the `earliestBlock` check.
 
 ## Output: RuleResult
 
@@ -66,21 +66,20 @@ Shape from [[00_rules_engine]], plus a `kind`:
 
 | Field | Meaning |
 |-------|---------|
-| `kind` | `RESULT` (a verdict), `REPORT` (a fact worth showing, e.g. extremity passed), `STATUS` (e.g. `INVALID_WINDOW`) |
+| `kind` | `REPORT` (a fact worth showing, e.g. a rule fired for an instrument, extremity passed), `STATUS` (e.g. `INVALID_WINDOW`) |
 | `rule` | Rule type |
 | `ruleKey` | The instance that produced it ([[05_rule_lifecycle]]) |
-| `code` | What a `REPORT` or `STATUS` is about, e.g. `EXTREMITY_PASSED`, `INVALID_WINDOW` |
+| `code` | What a `REPORT` or `STATUS` is about, e.g. `RANGE_SWEEP_EVENT`, `EXTREMITY_PASSED`, `INVALID_WINDOW` |
 | `level` | Grid level the result refers to |
 | `scope` | Instrument(s) |
-| `verdict` | `BULLISH`, `BEARISH`, `NEUTRAL`, `DIVERGENCE` (for `RESULT`) |
 | `eventTime` | Bar time that produced it (UTC) |
 | `evidence` | The numbers behind it |
 
-Whether a `RESULT` becomes a signal is decided outside the rule, in `SignalService` ([[07_signals_and_ui]]).
+Whether a `REPORT` becomes a signal is decided outside the rule, in `SignalService` ([[07_signals_and_ui]]).
 
 ## Mock rule
 
-`NEVER_FIRING`: an aggregate that subscribes to one basic rule per requested symbol (any existing basic rule, e.g. `RANGE_BREAK_WATCH`), consumes every event, and never emits a `RESULT`. It proves that a rule can be added without touching the core, and gives an end-to-end test of the subscription chain.
+`NEVER_FIRING`: an aggregate that subscribes to one basic rule per requested symbol (any existing basic rule, e.g. `RANGE_BREAK_WATCH`), consumes every event, and never emits a `REPORT`. It proves that a rule can be added without touching the core, and gives an end-to-end test of the subscription chain.
 
 ```mermaid
 classDiagram

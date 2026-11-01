@@ -29,8 +29,9 @@ export interface Bar {
   volume: number;
 }
 
-export type SignalKind = 'RESULT' | 'REPORT' | 'STATUS' | 'ERROR';
-export type Verdict = 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'DIVERGENCE';
+export type SignalKind = 'REPORT' | 'STATUS' | 'ERROR';
+/** Code of the report a Sequence range sweep emits for the instrument it fired from. */
+export const RANGE_SWEEP_EVENT = 'RANGE_SWEEP_EVENT';
 export type DayStatus = 'UNKNOWN' | 'VALID' | 'INVALID_WINDOW';
 
 /** A message on /topic/signals/{ruleKey}, and an element of GET /api/signals. */
@@ -42,7 +43,6 @@ export interface Signal {
   code?: string;
   level?: string;
   scope?: string[];
-  verdict?: Verdict;
   /** ISO-8601 UTC time of the bar that produced it. */
   eventTime?: string;
   evidence?: Record<string, unknown>;

@@ -1,6 +1,6 @@
 import { Box, ScrollArea, Stack, Text } from '@mantine/core';
 import { useMemo } from 'react';
-import type { Signal } from '../api/types';
+import { RANGE_SWEEP_EVENT, type Signal } from '../api/types';
 import { reportsFor } from '../lib/signals';
 import { formatNyTime } from '../lib/time';
 import { COLORS } from '../theme';
@@ -9,7 +9,8 @@ import { COLORS } from '../theme';
 const ROLLING_LIMIT = 200;
 
 /**
- * The reports about one instrument (its range breaks), newest first, beside its chart. A rolling window rather than
+ * The reports about one instrument (its range breaks and the sweep events it was reported in), newest first, beside
+ * its chart. A rolling window rather than
  * chart markers: while price stays beyond a level there is one report per second.
  */
 export function ReportsFeed({ symbol, signals, height }: { symbol: string; signals: Signal[]; height: number }) {
@@ -37,6 +38,29 @@ export function ReportsFeed({ symbol, signals, height }: { symbol: string; signa
 }
 
 function ReportRow({ report }: { report: Signal }) {
+  return report.code === RANGE_SWEEP_EVENT ? <EventRow report={report} /> : <ExtremityRow report={report} />;
+}
+
+/** A range sweep event, as facts: which instrument broke which side, and where this instrument's bar was. */
+function EventRow({ report }: { report: Signal }) {
+  const trigger = (report.evidence?.trigger ?? {}) as Record<string, unknown>;
+  const target = (report.evidence?.target ?? {}) as Record<string, unknown>;
+  const side = trigger.side === 'LOW' ? 'low' : 'high';
+  return (
+    <Text size="xs" ff="monospace" c={COLORS.text}>
+      <Text span c={COLORS.muted} inherit>
+        {report.eventTime ? formatNyTime(Date.parse(report.eventTime) / 1000) : '—'}
+      </Text>{' '}
+      <Text span c={COLORS.close} inherit>
+        Sweep event:
+      </Text>{' '}
+      {String(trigger.symbol)} broke 3-3-3 {side} {String(trigger.price)}; {report.scope?.[0]} {side}{' '}
+      {String(target[side])} within L {String(target.L)} / M {String(target.M)} / H {String(target.H)}
+    </Text>
+  );
+}
+
+function ExtremityRow({ report }: { report: Signal }) {
   const evidence = report.evidence ?? {};
   const low = evidence.side === 'LOW';
   return (
