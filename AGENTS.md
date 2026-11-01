@@ -21,6 +21,7 @@ Java service (ZeroMQ market data in, STOMP/WebSocket signals out) plus a React U
 ## Running and verifying
 
 - Gradle commands run from `project/system`, not the repo root. The full system runs with `docker compose up --build` from `project/`; details in `documents/architecture/09_build_and_run.md`.
+- `.agents/` (installed skills) is gitignored. If it is missing, run `npx skills experimental_install` at the repo root to restore it from `skills-lock.json`.
 
 ## Conventions that differ from defaults
 
