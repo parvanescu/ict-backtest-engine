@@ -13,13 +13,13 @@ RUN ./gradlew --no-daemon --quiet bootJar -x test && cp build/libs/*.jar app.jar
 FROM build AS demo-build
 RUN ./gradlew --no-daemon --quiet installDemoAdapter
 
-# Demo adapter: plays a synthetic trading day on ZeroMQ (see DemoAdapter). Binds all interfaces inside the container.
+# Demo adapter: plays scenarios on ZeroMQ, with its page on 5557 (see DemoAdapter). Binds all interfaces inside the container.
 FROM eclipse-temurin:25-jre AS demo
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
 WORKDIR /app
 COPY --from=demo-build /workspace/build/demo-adapter/lib lib
 USER app
-EXPOSE 5556
+EXPOSE 5556 5557
 ENTRYPOINT ["java", "-cp", "/app/lib:/app/lib/*", "com.alert_service.demo.DemoAdapter"]
 CMD ["--endpoint", "tcp://*:5556"]
 

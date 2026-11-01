@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Market data simulator</title>
+<style>
+  :root { color-scheme: dark; --bg: #14161a; --panel: #1d2026; --line: #2d323b; --text: #e3e6eb; --dim: #8b93a1; --accent: #4c9aff; --bad: #ff6b6b; --ok: #3fb68b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.sub { color: var(--dim); margin: 0 0 20px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  label { display: block; color: var(--dim); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+  select, input { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: inherit; }
+  .row { display: grid; grid-template-columns: 1fr 140px; gap: 12px; margin-bottom: 12px; }
+  button { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 8px 18px; font: inherit; cursor: pointer; }
+  button.secondary { background: transparent; border: 1px solid var(--line); color: var(--text); }
+  button:disabled { opacity: .45; cursor: default; }
+  ul { margin: 6px 0 0; padding-left: 20px; }
+  #status { font-variant-numeric: tabular-nums; }
+  .bar { height: 6px; background: var(--line); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: var(--ok); transition: width .3s; }
+  .error { color: var(--bad); margin-top: 8px; min-height: 1.5em; }
+  .dim { color: var(--dim); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Market data simulator</h1>
+  <p class="sub">Plays 1-second bars of ES, NQ, YM and RTY from the start of 3-3-2 (09:22:30 New York) to the end of 3-4-1 (10:52:30), the span in which the Sequence range sweep can trigger.</p>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label for="scenario">Scenario</label>
+        <select id="scenario"></select>
+      </div>
+      <div>
+        <label for="speed">Speed (x)</label>
+        <input id="speed" type="number" min="1" value="60">
+      </div>
+    </div>
+    <div id="description"></div>
+    <label style="margin-top:12px">Expected range sweep events</label>
+    <ul id="expected"></ul>
+    <div style="margin-top:16px; display:flex; gap:8px">
+      <button id="play">Play</button>
+      <button id="stop" class="secondary">Stop</button>
+    </div>
+    <div class="error" id="error"></div>
+  </div>
+
+  <div class="panel">
+    <label>Status</label>
+    <div id="status" class="dim">Loading…</div>
+    <div class="bar"><div id="progress"></div></div>
+    <p class="dim" style="margin-bottom:0">Speed is simulated seconds per real second. Before each run, press Reset data in the main UI to clear the previous one.</p>
+  </div>
+</main>
+<script>
+  const el = (id) => document.getElementById(id);
+  let scenarios = [];
+
+  function showScenario() {
+    const s = scenarios.find((x) => x.id === el('scenario').value);
+    el('description').textContent = s ? s.description : '';
+    el('expected').replaceChildren(...(s ? s.expected : []).map((text) => {
+      const li = document.createElement('li');
+      li.textContent = text;
+      return li;
+    }));
+  }
+
+  async function call(path, body) {
+    const response = await fetch(path, body === undefined ? {} : {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || ('HTTP ' + response.status));
+    return data;
+  }
+
+  function showStatus(s) {
+    const playing = s.state === 'playing';
+    el('play').disabled = playing;
+    el('stop').disabled = !playing;
+    el('progress').style.width = s.percent + '%';
+    let text;
+    if (playing) text = 'Playing ' + s.scenario + ': ' + s.simulatedTime + ' New York, ' + s.percent + '%';
+    else if (s.state === 'done') text = 'Done: ' + s.scenario + ' finished';
+    else text = 'Idle';
+    if (s.missing.length) text += '. Waiting for the service to subscribe to ' + s.missing.join(', ') + ' (open the UI, rule running)';
+    else text += '. The service is subscribed to all four symbols';
+    el('status').textContent = text;
+  }
+
+  async function refresh() {
+    try { showStatus(await call('/api/status')); }
+    catch (e) { el('status').textContent = 'Simulator unreachable: ' + e.message; }
+  }
+
+  el('scenario').addEventListener('change', showScenario);
+  el('play').addEventListener('click', async () => {
+    el('error').textContent = '';
+    try {
+      showStatus(await call('/api/play', { scenario: el('scenario').value, speed: Number(el('speed').value) }));
+    } catch (e) { el('error').textContent = e.message; }
+  });
+  el('stop').addEventListener('click', async () => {
+    el('error').textContent = '';
+    try { await call('/api/stop', {}); refresh(); } catch (e) { el('error').textContent = e.message; }
+  });
+
+  (async () => {
+    scenarios = await call('/api/scenarios');
+    el('scenario').replaceChildren(...scenarios.map((s) => {
+      const option = document.createElement('option');
+      option.value = s.id;
+      option.textContent = s.title;
+      return option;
+    }));
+    showScenario();
+    refresh();
+    setInterval(refresh, 1000);
+  })().catch((e) => { el('status').textContent = 'Simulator unreachable: ' + e.message; });
+</script>
+</body>
+</html>
