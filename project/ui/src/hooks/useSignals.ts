@@ -12,7 +12,7 @@ const HISTORY_RETRY_MS = 300;
  * Runs the rule {@code ruleKey} (subscribing is what starts it) and collects its signals: live ones plus today's
  * history, merged by id. Null stops the rule.
  */
-export function useSignals(ruleKey: string | null) {
+export function useSignals(ruleKey: string | null, resetEpoch = 0) {
   const connection = useStomp();
   const { status, epoch } = useConnection();
   const [signals, setSignals] = useState<Signal[]>([]);
@@ -62,7 +62,7 @@ export function useSignals(ruleKey: string | null) {
       controller.abort();
       unsubscribe();
     };
-  }, [connection, ruleKey, status, epoch]);
+  }, [connection, ruleKey, status, epoch, resetEpoch]);
 
   return { signals, dayStatus, error };
 }

@@ -10,7 +10,15 @@ import { ReportsFeed } from './ReportsFeed';
 const CHART_HEIGHT = 300;
 
 /** One instrument: its chart with the rule's events on it, and its reports beside it. */
-export function InstrumentPanel({ symbol, signals }: { symbol: string; signals: Signal[] }) {
+export function InstrumentPanel({
+  symbol,
+  signals,
+  resetEpoch,
+}: {
+  symbol: string;
+  signals: Signal[];
+  resetEpoch: number;
+}) {
   const event = useMemo(() => latestEventFor(signals, symbol), [signals, symbol]);
   return (
     <Paper p="xs" withBorder style={{ background: COLORS.background, borderColor: COLORS.grid }}>
@@ -25,7 +33,7 @@ export function InstrumentPanel({ symbol, signals }: { symbol: string; signals: 
         )}
       </Group>
       <Group align="flex-start" gap="xs" wrap="nowrap">
-        <PriceChart symbol={symbol} signals={signals} height={CHART_HEIGHT} />
+        <PriceChart symbol={symbol} signals={signals} height={CHART_HEIGHT} resetEpoch={resetEpoch} />
         <ReportsFeed symbol={symbol} signals={signals} height={CHART_HEIGHT} />
       </Group>
     </Paper>
